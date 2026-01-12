@@ -7,10 +7,15 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 import re
 
-region_links = pd.read_csv("data/region_links_ae.csv")
-
 
 def get_mrae_links(base_url=None, region=None):
+    """
+    Récupère les liens vers les pages annuelles des avis de projets MRAE
+    pour une région donnée.
+
+    :param base_url: url de la page régionale MRAE
+    :param region: région
+    """
     timeout_config = httpx.Timeout(60.0, connect=10.0)
 
     headers = {
@@ -44,6 +49,7 @@ def get_mrae_links(base_url=None, region=None):
 
 if __name__ == "__main__":
     results = []
+    region_links = pd.read_csv("data/region_links_ae.csv")
     for _, row in region_links.iterrows():
         data = get_mrae_links(row["site"], row["region"])
         results.extend(data)
