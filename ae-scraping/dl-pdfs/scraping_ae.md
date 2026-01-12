@@ -25,8 +25,10 @@ Pour plusieurs raisons : certains sont ceux de 2026, donc n'ont pas d'avis publi
 
 ### Site-wide research
 
-Il existe une recherche site-wide qui nous permettrait de tout faire en une query.
+Il existe une recherche site-wide qui nous permettrait de tout faire en une query de ce type :
+
 https://www.mrae.developpement-durable.gouv.fr/?typedoc=pdf&recherche=photovolta%C3%AFque&page=recherche&perimetre=all
+
 Le risque est que ça nous permet pas de filtrer les "avis sur projets" précis et qu'on perd potentiellement de la metadonnée (année, région, etc) facilement accessible sur les autres URLs.
 
 ### Crawling + scraping (solution choisie)
@@ -39,4 +41,8 @@ Etapes :
 
 1 - Récupérer les URLs uniques par année
 
-2 - Scraper les pages avis / année en filtrant sur photovoltaïque dans la description
+2 - Récupérer les URLs des PDFs pertinents (avec voltaïque dans la description)
+
+Ici, je garde la description et le titre qui nous permettront de récupérer facilement des métadonnées (date de l'avis, type de projet etc) plus tard
+
+3 - Télécharger les PDFs pertinents (env. 2000)
