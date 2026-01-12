@@ -17,7 +17,7 @@ Script : extract_relevant_pdf_links.py -->
 
 Data : metadata_pdfs.csv (1945 rows) (liste des liens de PDF + leurs descriptions qui sont concernés par le *voltaïque)
 
-NB : quelques liens n'ont donné aucun résultats. Ils sont stockés sur google sheet sous la feuille url_wo_relevant_pdfs.
+NB : quelques liens n'ont donné aucun résultat. Ils sont stockés sur google sheet sous la feuille url_wo_relevant_pdfs.
 
 Pour plusieurs raisons : certains sont ceux de 2026, donc n'ont pas d'avis publiés, d'autres n'ont pas d'avis pertinents, ou encore renvoient à un autre lien.
 
