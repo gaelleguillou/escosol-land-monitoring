@@ -2,6 +2,8 @@
 
 ## Pipeline
 
+Les données csv sont aussi enregistrées sur (Google Sheets)[https://docs.google.com/spreadsheets/d/1HuqKUfTc3zOMR3sNk0LgQVhm-WPcfHb8_RzWmWJwb0o/edit?gid=0#gid=0].
+
 Data : region_links_ae.csv (liste des régions et de leurs pages "avis sur projets") -->
 
 Script : extract_links.py (extraction des liens d'avis sur projet par année et région) -->
