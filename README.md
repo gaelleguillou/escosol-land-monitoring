@@ -14,3 +14,15 @@ To add packages : `uv add examplepackage`
 ## Pre-commit
 
 We use [pre-commit](https://pre-commit.com/#install) to ensure code quality.
+
+# Data Sources
+
+## IGN
+
+[à compléter]
+
+## Autorités Environnementales Régionales
+
+On récupère les avis sur projets en PDF de chaque région. Pour cela, on a recours à du scraping.
+
+Les méthodes utilisées sont détaillées dans `ae-scraping/README_scraping.md`.
