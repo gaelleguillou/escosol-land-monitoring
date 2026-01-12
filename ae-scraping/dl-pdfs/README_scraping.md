@@ -56,3 +56,29 @@ Ici, je garde la description et le titre qui nous permettront de récupérer fac
 Le script existant prend env. 2h à tourner pour télécharger tous les PDFs.
 
 4 - Extraire les données pertinentes des PDF
+
+## Données souhaitées
+
+- Longitude (à extraire commune)
+- Latitude (à extraire commune)
+- Département (metadata_pdf)
+- Région (region_links)
+- Commune (metadata_pdf)
+- (ajout) Type de projet (centrale, parc, agrivoltaique, photovoltaique, etc)
+- Superficie (hectare) (À EXTRAIRE PDF)
+- Type initial du sol (Naturel, Agricole, Forestier ou Urbaniser, A Urbaniser (friches)) (À EXTRAIRE PDF)
+- Puissance installée (À EXTRAIRE PDF)
+- Statut
+- Année projet (optionnel)
+- Dérogation espèces protégées (optionnel)
+- Autorisation de défrichement (optionnel)
+- Avis CDPENAF (optionnel)
+- Contact (optionnel - peut être “touchy”)
+- Précision sur le type initial de sol (à creuser)
+
+La plupart des informations sont dans la section 1.1 si elle existe, de présentation du projet.
+
+## Interrogations
+
+- Besoin de quel niveau de précision pour long/latitude ?
+- Nécessité d'utiliser l'IA pour extraire certaines données pertinentes ?
