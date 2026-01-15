@@ -1,0 +1,43 @@
+INSTALL spatial;
+LOAD spatial;
+
+
+Create table ign_photovoltaique_sol as SELECT 
+	id::INT64 as id,
+	millesime::int32 as millesime,
+	long::numeric as long,
+	lat::numeric as lat,
+	surf_parc::numeric as surf_parc,
+	flottant::bool as flottant,
+	agrivolt::bool as agrivolt,
+	split(insee_com,', ') as insee_com,
+	split(nom_com,', ') as nom_com,
+	siret_port::varchar as siret_port,
+	ref_urba::varchar as ref_urba,
+	type_proj::varchar as type_proj,
+	surf_socle::numeric as surf_socle,
+	etat::varchar as etat,
+	puiss_max::int32 as puiss_max,
+	date_depot::TIMESTAMPTZ as date_depot,
+	date_deliv::TIMESTAMPTZ as date_deliv,
+	date_insta::TIMESTAMPTZ as date_insta,
+	duree_exp::int32 as duree_exp,
+	adresse::varchar as adresse,
+	surf_occup::numeric as surf_occup,
+	surf_terr::numeric as surf_terr,
+	localisat::varchar as localisat,
+	sol_nature::varchar as sol_nature,
+	sol_detail::varchar as sol_detail,
+	usage_terr::varchar as usage_terr,
+	type_agri::varchar as type_agri,
+	ancrage::varchar as ancrage,
+	cloture::varchar as cloture,
+	revetement::varchar as revetement,
+	haut_pann::numeric as haut_pann,
+	espacement::numeric as espacement,
+	nat_pieux::bool as nat_pieux,
+	ex_date::bool as ex_date,
+	ex_agriv::bool as ex_agriv,
+	ex_techniq::bool as ex_techniq,
+	geom
+from ST_Read('path/to/parcs_photovoltaiques_correction251031.gpkg')
