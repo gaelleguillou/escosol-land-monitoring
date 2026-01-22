@@ -25,6 +25,10 @@ Script : `download_pdfs.py` (~2h runtime)
 
 Data : `data/downloads_pdf`. Pour des raisons de sécurité et de stockage, les PDFs ne sont pas stockés sur GH.
 
+Script : `pdf_to_data.py` (~30s runtime)
+
+Data : `data/pdf_extraction_results.csv`. Egalement uploadé sur le sheet.
+
 Ils sont sur un drive externe accessible [ici](https://drive.google.com/drive/folders/1YFCO0346CU_mfqp-9twzwkOIQRSAtCtk?usp=sharing).
 
 ## Stratégie
@@ -57,6 +61,10 @@ Le script existant prend env. 2h à tourner pour télécharger tous les PDFs.
 
 4 - Extraire les données pertinentes des PDF
 
+`pdf_to_data.py`
+
+Pour l'instant, ne permet d'extraire que les hectares et la puissance.
+
 ## Données souhaitées
 
 - Longitude (à extraire commune)
@@ -64,7 +72,7 @@ Le script existant prend env. 2h à tourner pour télécharger tous les PDFs.
 - Département (metadata_pdf)
 - Région (region_links)
 - Commune (metadata_pdf)
-- (ajout) Type de projet (centrale, parc, agrivoltaique, photovoltaique, etc)
+- (ajout) Type de projet (centrale, parc, agrivoltaique, photovoltaique, etc) (metadata_pdf)
 - Superficie (hectare) (À EXTRAIRE PDF)
 - Type initial du sol (Naturel, Agricole, Forestier ou Urbaniser, A Urbaniser (friches)) (À EXTRAIRE PDF)
 - Puissance installée (À EXTRAIRE PDF)
@@ -80,5 +88,5 @@ La plupart des informations sont dans la section 1.1 si elle existe, de présent
 
 ## Interrogations
 
-- Besoin de quel niveau de précision pour long/latitude ?
-- Nécessité d'utiliser l'IA pour extraire certaines données pertinentes ?
+- Besoin de quel niveau de précision pour long/latitude ? Réponse : commune
+- Nécessité d'utiliser l'IA pour extraire certaines données pertinentes ? Réponse : oui, ce sera nécessaire pour les types de sol a minima
