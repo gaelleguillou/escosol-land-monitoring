@@ -1,7 +1,15 @@
 import marimo
 
-__generated_with = "0.19.2"
+__generated_with = "0.19.4"
 app = marimo.App(width="medium")
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    # Analyse des jeux de données Photovoltaiques et OCS-GE
+    """)
+    return
 
 
 @app.cell
@@ -14,8 +22,11 @@ def _():
     import plotly.express as px
     import folium
     import shapely
+    from shapely import wkb
     from pyproj import Transformer
-    return Transformer, duckdb, folium, mo, pl, px, re, shapely
+    from spatial_polars import SpatialFrame
+    import json
+    return Transformer, duckdb, folium, json, mo, pl, px, shapely, wkb
 
 
 @app.cell
@@ -37,6 +48,77 @@ def _(con, mo):
 
 
 @app.cell
+def _(mo):
+    mo.md(r"""
+    ## IGN Photovoltaïque sol
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ### Description du jeu de données
+    """)
+    return
+
+
+@app.cell
+def _(con, ign_photovoltaique_sol, mo):
+    _df = mo.sql(
+        f"""
+        SUMMARIZE ign_photovoltaique_sol
+        """,
+        engine=con
+    )
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    Le jeu de données IGN photovoltaïque comporte 2217 linges pour 2110 installations uniques. Les différents parcs ont été identifiés grâce à des images prises entre 2019 et 2023 (variable `millesime`). Pour chaque parc on a l'occupation géospatiale exacte et sa surface observée.
+    Cependant le jeu de données comporte très peu d'informations sur les caractéristiques de chaque parc, notamment **98% des parcs n'ont pas leur puissance de renseignée**.
+    """)
+    return
+
+
+@app.cell
+def _(con, ign_photovoltaique_sol, mo):
+    df_photo = mo.sql(
+        f"""
+        SELECT
+            *,
+            ST_AsWkb (geom) as geom_wkb
+        FROM
+            ign_photovoltaique_sol
+        """,
+        engine=con
+    )
+    return (df_photo,)
+
+
+@app.cell
+def _(df_photo, folium, shapely, wkb):
+    m = folium.Map(location=[46.227638, 2.213749], zoom_start=6, tiles="OpenStreetMap")
+
+    for row in df_photo.iter_rows(named=True):
+        geom_shapely = wkb.loads(row["geom_wkb"])
+        folium.GeoJson(shapely.to_geojson(geom_shapely)).add_to(m)
+
+    m
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ### Surface
+    """)
+    return
+
+
+@app.cell
 def _(con, ign_photovoltaique_sol, mo):
     _ = mo.sql(
         f"""
@@ -51,33 +133,10 @@ def _(con, ign_photovoltaique_sol, mo):
 
 
 @app.cell
-def _(con, ign_photovoltaique_sol, mo):
-    _df = mo.sql(
-        f"""
-        SELECT
-            count(*),
-            count(distinct id)
-        from ign_photovoltaique_sol
-        """,
-        engine=con
-    )
-    return
-
-
-@app.cell
-def _(con, mo, ocs):
-    _df = mo.sql(
-        f"""
-        -- Nombre de lignes dans le jeu de données OCS
-        SELECT
-            count(*)
-        FROM
-            ocs
-        LIMIT
-            5
-        """,
-        engine=con
-    )
+def _(mo):
+    mo.md(r"""
+    ## Croisement avec le jeu de données OCS
+    """)
     return
 
 
@@ -104,7 +163,22 @@ def _(con, ign_photovoltaique_sol, mo, ocs):
                             LIST_APPLY(ips.insee_com, lambda s: s::text ~ '^976.*')
                         ) THEN ST_Transform (ips.geom, 'EPSG:4326','EPSG:4471' , true)
                         ELSE ST_Transform (ips.geom, 'EPSG:4326','EPSG:2154' , true)
-                    END as geom_proj
+                    END as geom_proj,
+            		CASE
+                        WHEN LIST_BOOL_OR(
+                            LIST_APPLY(ips.insee_com, lambda s: s::text ~ '^971.*|972.*')
+                        ) THEN 5490
+                        WHEN LIST_BOOL_OR(
+                            LIST_APPLY(ips.insee_com, lambda s: s::text ~ '^973.*')
+                        ) THEN 2972
+            			WHEN LIST_BOOL_OR(
+                            LIST_APPLY(ips.insee_com, lambda s: s::text ~ '^974.*')
+                        ) THEN 2975
+                        WHEN LIST_BOOL_OR(
+                            LIST_APPLY(ips.insee_com, lambda s: s::text ~ '^976.*')
+                        ) THEN 4471
+                        ELSE 2154
+                    END as geom_original_referential
                 FROM
                     ign_photovoltaique_sol ips
             ),
@@ -117,7 +191,8 @@ def _(con, ign_photovoltaique_sol, mo, ocs):
             o.code_us,
             o.the_geom as ocs_geom,
             ST_AsWKB(o.the_geom) as ocs_geom_wkb,
-            ST_Intersection(ep.geom_proj,o.the_geom) as geom_intersection
+            ST_Intersection(ep.geom_proj,o.the_geom) as geom_intersection,
+            ST_AsWKB(ST_Intersection(ep.geom_proj,o.the_geom)) as geom_intersection_wkb
         from
             escosol_projected ep
         left join ocs o on ST_INTERSECTS(ep.geom_proj,o.the_geom))
@@ -134,11 +209,10 @@ def _(con, ign_photovoltaique_sol, mo, ocs):
 
 
 @app.cell
-def _(df_link, pl):
-    # Nombre de parcs pour lesquels on a réussi à trouver au moins une géométrie
-    df_link.filter(pl.col("millesime") > pl.col("millesime_ocs")).select(
-        ["id","millesime","id_1","millesime_ocs"]
-    ).select(pl.col("id").n_unique(),pl.len())
+def _(mo):
+    mo.md(r"""
+    ### Analyse des liens entres parcs et OCS :
+    """)
     return
 
 
@@ -148,14 +222,76 @@ def _(df_link, pl):
         (pl.col("millesime") > pl.col("millesime_ocs")) | pl.col("id_1").is_null()
     ).filter(
         (
-            pl.col("millesime_ocs")
-            .rank(descending=True)
-            .over(partition_by=["id", "id_1"], order_by="millesime_ocs")
-            == 1
+            (
+                pl.col("millesime_ocs")
+                .rank(descending=True)
+                .over(partition_by=["id", "id_1"], order_by="millesime_ocs")
+                == 1
+            ) # Uniquement les données OCS les plus récentes mais jamais plus que le millésime des données photovolat_iques
         )
         | pl.col("id_1").is_null()
     )
     return (df_link_filtered,)
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    Est-ce que tous les parcs ont des correspondances dans le jeu de données OCS ?
+    """)
+    return
+
+
+@app.cell
+def _(df_link_filtered, pl):
+    df_link_filtered.group_by("id").agg(
+        (pl.col("id_1").count() > 0).alias("has_ocs")
+    ).select(pl.col("has_ocs").value_counts().struct.unnest())
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    3 parcs n'en ont pas :
+    """)
+    return
+
+
+@app.cell
+def _(df_link_filtered, pl):
+    df_link_filtered.filter(pl.col("id_1").is_null())
+    return
+
+
+@app.cell
+def _(Transformer, folium, pl, shapely, wkb):
+    def create_map(
+        df: pl.DataFrame, geom_colname: str, project: bool = False
+    ) -> folium.Map:
+        m = folium.Map(zoom_start=6, tiles="OpenStreetMap")
+        for row in df.iter_rows(
+            named=True
+        ):
+            geom_shapely = wkb.loads(row[geom_colname])
+            if project:
+                transformer = Transformer.from_crs(
+                    row["geom_original_referential"], 4326
+                )
+                geom_shapely = shapely.transform(
+                    geom_shapely, transformer.transform, interleaved=False
+                )
+            folium.Polygon(shapely.get_coordinates(geom_shapely),popup=row["id"]).add_to(m)
+        return m
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    #### Vérification des surfaces :
+    """)
+    return
 
 
 @app.cell
@@ -174,8 +310,20 @@ def _(df_link_filtered, pl):
         (
             (pl.col("surf_parc") - pl.col("geom_intersection_area"))
             / pl.col("surf_parc")
-        ).alias("area_error")
-    ).sort(pl.col("area_error").abs(), descending=True)
+        ).alias("area_error"),
+        (
+            (pl.col("project_geom_area") - pl.col("geom_intersection_area"))
+            / pl.col("project_geom_area")
+        ).alias("area_geom_error"),
+    ).sort(pl.col("area_geom_error").abs(), descending=True)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ### Statistiques sur les usages
+    """)
     return
 
 
@@ -198,18 +346,35 @@ def _():
         "US4.2": "Services de logistique et de stockage",
         "US4.3": "Réseaux d'utilité publique",
         "US5": "Usage résidentiel ",
-        "US6.1" :"Zones en transition",
+        "US6.1": "Zones en transition",
         "US6.2": "Zones abandonnées",
         "US6.3": "Sans usage",
         "US6.6": "Usage inconnu ",
     }
-    return (CODES_US_MAPPING,)
 
-
-@app.cell
-def _(df_link_filtered, pl):
-    df_link_filtered.filter(pl.col("id_1").is_null())
-    return
+    CODES_US_COLOR_MAPPING = {
+        "US1.1": "#ffffa8",
+        "US1.2": "#008000",
+        "US1.3": "#a700cc",
+        "US1.4": "#000099",
+        "US1.5": "#996633",
+        "US2": "#e5e5e5",
+        "US235": "#e6004d",
+        "US3": "#ff8c00",
+        "US4.1.1": "#cc0000",
+        "US4.1.2": "#5a5a5a",
+        "US4.1.3": "#e6cce6",
+        "US4.1.4": "#0066ff",
+        "US4.1.5": "#660033",
+        "US4.2": "#ff0000",
+        "US4.3": "#ff4d00",
+        "US5": "#be0960",
+        "US6.1": "#ff4dff",
+        "US6.2": "#404040",
+        "US6.3": "#f0f028",
+        "US6.6": "#ffcc00",
+    }
+    return CODES_US_COLOR_MAPPING, CODES_US_MAPPING
 
 
 @app.cell
@@ -257,25 +422,20 @@ def _(df_code_us_by_surface, px):
         template="simple_white",
         text="% de la surface",
         text_auto=".2f",
+        labels={
+            "code_us": "Usage du sol occupé"
+        },
+        title = "Sur quels types d'occupation des sols les parcs phtovoltaïques sont-ils installés ?"
     )
     return
 
 
 @app.cell
-def _():
-    CODES_US_COLOR_MAPPING = {
-        "US1.1": "#4269d0",
-        "US1.2": "#1f78b4",
-        "US1.3": "#b2df8a",
-        "US1.4": "#33a02c",
-        "US1.5": "#fb9a99",
-        "US2": "#e31a1c",
-        "US235": "#fdbf6f",
-        "US3": "#ff7f00",
-        "US6.1" :"#cab2d6",
-        "US6.3": "#cab2d6",
-    }
-    return (CODES_US_COLOR_MAPPING,)
+def _(mo):
+    mo.md(r"""
+    ### Carte
+    """)
+    return
 
 
 @app.cell
@@ -285,86 +445,94 @@ def _(
     Transformer,
     df_link_filtered,
     folium,
-    re,
+    json,
     shapely,
 ):
-    crs_transformers = {
-        r"^971.*|972.*": Transformer.from_crs(5490, 4326),
-        r"^973.*": Transformer.from_crs(2972, 4326),
-        r"^974.*": Transformer.from_crs(2975, 4326),
-        r"^976.*": Transformer.from_crs(4471, 4326),
-    }
-
-    metropole_transformer = Transformer.from_crs(2154, 4326)
-
-
-    def project(
-        geom: shapely.Geometry, codes_insee: list[str]
-    ) -> shapely.Geometry:
-        for pattern, transformer in crs_transformers.items():
-            if any(re.match(pattern=pattern, string=s) for s in codes_insee):
-                return shapely.transform(
-                    geom, transformer.transform, interleaved=False
-                )
-
-        return shapely.transform(
-            geom, metropole_transformer.transform, interleaved=False
-        )
-
-
     polygons = []
     ids_already_added = []
     for data in df_link_filtered.iter_rows(named=True):
         codes_insee = data["insee_com"]
+    
+        ocs_geom_wkb = data["geom_intersection_wkb"]
+        transformer = Transformer.from_crs(
+            data["geom_original_referential"], 4326, always_xy=True
+        )
 
-
-        ocs_geom_wkb = data["ocs_geom_wkb"]
         if ocs_geom_wkb is not None:
-            geom_ocs = shapely.from_wkb(data["ocs_geom_wkb"])
-            geom_ocs_4326 = project(geom=geom_ocs, codes_insee=codes_insee)
-            color = CODES_US_COLOR_MAPPING.get(data["code_us"],"#b15928")
-            description_us = CODES_US_MAPPING.get(data["code_us"],"Inconnu")
-            polygon_ocs = folium.Polygon(
-                shapely.get_coordinates(geom_ocs_4326),
-                fill_color=color,
-                stroke=False,
-                popup=f"{data["id_1"]} | {description_us} - Surace partagée : {data["geom_intersection_area"]}m^2",
-                fill_opacity=0.2,
+            geom_ocs = shapely.from_wkb(ocs_geom_wkb)
+            geom_ocs_4326 = shapely.transform(
+                geom_ocs, transformer.transform, interleaved=False
+            )
+            color = CODES_US_COLOR_MAPPING.get(data["code_us"], "#b15928")
+            description_us = CODES_US_MAPPING.get(data["code_us"], "Inconnu")
+            geom_ocs_4326_geojson = json.loads(shapely.to_geojson(geom_ocs_4326))
+            geom_ocs_4326_geojson_clean = {
+                "type": "Feature",
+                "geometry": geom_ocs_4326_geojson,
+                "properties": {
+                    "popup": f"{data['id_1']} | {description_us} - Surface partagée : {data['geom_intersection_area']}m^2"
+                },
+            }
+            polygon_ocs = folium.GeoJson(
+                geom_ocs_4326_geojson_clean,
+                style_function=lambda feature: {
+                    "fillColor": color,
+                    "color": color,
+                    "fill_opacity": 0.3,
+                    "stroke":False,
+                },
+                popup=folium.GeoJsonPopup(fields=["popup"], labels=False),
+                highlight_function=lambda feature: {
+                    "color": "grey",
+                    "stroke": True,
+                },
+                popup_keep_highlighted=True,
             )
             polygons.append(polygon_ocs)
 
         if not data["id"] in ids_already_added:
             geom_photo = shapely.from_wkb(data["geom_proj_wkb"])
-            geom_photo_4326 = project(geom=geom_photo, codes_insee=codes_insee)
 
-            polygon_photo = folium.Polygon(
-                shapely.get_coordinates(geom_photo_4326),
-                popup=f"{data["id"]} | Puisance max :  {data["puiss_max"]} - Surface déclarée : {data["surf_parc"]}",
-                fill_color="#f39c12",
-                color="#f39c12",
-                fill_opacity=0.3,
-            
+            geom_photo_4326 = shapely.transform(
+                geom_photo, transformer.transform, interleaved=False
             )
-            center = shapely.centroid(geom_photo_4326)
-            folium.Marker(tooltip=data["id"],location=[center.x,center.y])
+            geom_photo_4326_geojson = json.loads(shapely.to_geojson(geom_photo_4326))
+            geom_photo_4326_geojson_clean = {
+                "type": "Feature",
+                "geometry": geom_photo_4326_geojson,
+                "properties": {
+                    "popup": f"{data['id']} | Surface totale : {data['surf_parc']} - Surace partagée : {data['geom_intersection_area']}m^2"
+                },
+            }
+
+            polygon_photo = folium.GeoJson(
+                geom_photo_4326_geojson_clean,
+                fill_opacity=0.3,
+                style_function=lambda feature: {
+                    "color": "#f39c12",
+                    "weight":4,
+                    "fill":False
+                },
+                popup=folium.GeoJsonPopup(fields=["popup"], labels=False),
+                highlight_function=lambda feature: {
+                    "color": "red",
+                    "stroke": True,
+                    "fill":False
+                },
+            )
             polygons.append(polygon_photo)
             ids_already_added.append(data["id"])
 
-    return (polygons,)
-
-
-@app.cell
-def _(folium, polygons):
-    m = folium.Map(
+    map_link = folium.Map(
         location=[46.2, 2.21],
         zoom_start=6,
         tiles="GeoportailFrance.orthos",
     )
 
     for polygon in polygons:
-        polygon.add_to(m)
+        polygon.add_to(map_link)
 
-    m.save("map.html")
+    map_link.save("map.html")
     return
 
 

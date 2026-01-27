@@ -15,5 +15,9 @@ dependencies = [
     "py7zr>=1.1.0",
     "pyproj>=3.7.2",
     "shapely>=2.1.2",
+    "spatial-polars[lonboard]>=0.2.3",
     "tqdm>=4.67.1",
 ]
+
+[tool.marimo.runtime]
+output_max_bytes = 50_000_000
