@@ -111,6 +111,23 @@ def _(df_photo, folium, shapely, wkb):
 
 
 @app.cell
+def _(con, ign_photovoltaique_sol, mo):
+    _df = mo.sql(
+        f"""
+        SELECT
+        	b."COM",
+            count(distinct id) as num_installations
+        FROM ign_photovoltaique_sol a
+        left join 'https://www.insee.fr/fr/statistiques/fichier/8377162/v_commune_2025.csv' b on a."insee_com"[1]=b."COM"
+        group by 1
+        order by 2 desc
+        """,
+        engine=con
+    )
+    return
+
+
+@app.cell
 def _(mo):
     mo.md(r"""
     ### Surface
@@ -537,7 +554,72 @@ def _(
 
 
 @app.cell
-def _():
+def _(mo):
+    mo.md(r"""
+    ## Données ODRE
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    #### Création de la table
+    """)
+    return
+
+
+@app.cell
+def _(con, mo):
+    _df = mo.sql(
+        f"""
+        CREATE table if not exists registre_installations as
+        from
+            'https://object.files.data.gouv.fr/hydra-parquet/hydra-parquet/c14e5a7d-2ca6-4ad8-bc61-93889d13fc25.parquet'
+        """,
+        engine=con
+    )
+    return
+
+
+@app.cell
+def _(con, mo, registre_installations):
+    _df = mo.sql(
+        f"""
+        SUMMARIZE registre_installations
+        """,
+        engine=con
+    )
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    #### Filtre sur les installations solaires
+    """)
+    return
+
+
+@app.cell
+def _(con, mo, registre_installations):
+    df_registre_installations = mo.sql(
+        f"""
+        SELECT
+            *
+        from
+            registre_installations
+        where
+            filiere = 'Solaire';
+        """,
+        engine=con
+    )
+    return (df_registre_installations,)
+
+
+@app.cell
+def _(df_registre_installations, pl):
+    df_registre_installations.group_by("technologie").agg(pl.len())
     return
 
 
