@@ -1,10 +1,13 @@
 # Access pages and extract links to avis projet x année
+from argparse import ArgumentParser
+from pathlib import Path
 import re
 from urllib.parse import urljoin
 
 import httpx
 import pandas as pd
 from bs4 import BeautifulSoup
+from tqdm import tqdm
 
 
 def get_mrae_links(base_url=None, region=None):
@@ -47,11 +50,35 @@ def get_mrae_links(base_url=None, region=None):
 
 
 if __name__ == "__main__":
+    arg_parser = ArgumentParser(
+        "extract_year_links",
+        description="Program that scrapes the links of MRAe website pages that list PDFs for each year and region. "
+        "Needs the CSV file region_links_ae.csv as input. "
+        "Output a new CSV file ae_year_links.csv.",
+    )
+    arg_parser.add_argument(
+        "region_links_ae_csv_filepath", help="Path to the csv file region_links_ae.csv."
+    )
+    arg_parser.add_argument(
+        "-o",
+        "--output_path",
+        help="Path where to output the resulting metadata_pdfs.csv file."
+        "Default to same folder as region_links_ae.csv.",
+        dest="output_path",
+    )
+
+    args = arg_parser.parse_args()
+    region_links_ae_csv_filepath = Path(args.region_links_ae_csv_filepath)
+    output_path = region_links_ae_csv_filepath.parent
+    if args.output_path is not None:
+        output_path = Path(args.output_path)
+
     results = []
-    region_links = pd.read_csv("data/region_links_ae.csv")
-    for _, row in region_links.iterrows():
+    region_links = pd.read_csv(region_links_ae_csv_filepath)
+    for _, row in tqdm(region_links.iterrows(), total=region_links.shape[0]):
         data = get_mrae_links(row["site"], row["region"])
         results.extend(data)
+
     df_results = pd.DataFrame(results)
     df_results.columns = ["base_url", "region", "year", "year_url"]
-    df_results.to_csv("data/ae_year_links.csv", index=False)
+    df_results.to_csv(output_path / "ae_year_links.csv", index=False)

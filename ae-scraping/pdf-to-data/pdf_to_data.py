@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 import pymupdf
+from tqdm import tqdm
 
 # Code copied from the data4good sufficiency project
 # https://github.com/dataforgoodfr/13_democratiser_sobriete
@@ -103,7 +104,7 @@ def process_all_pdfs(folder_path: Path, output_path: Path):
     results = []
     pdf_files = [f for f in os.listdir(folder_path) if f.lower().endswith(".pdf")]
 
-    for filename in pdf_files:
+    for filename in tqdm(pdf_files):
         try:
             # 1. Extraction texte brut
             raw_text = get_raw_text_pymupdf(folder_path / filename)
@@ -152,7 +153,6 @@ if __name__ == "__main__":
     )
 
     args = arg_parser.parse_args()
-
     pdf_path = Path(args.pdf_path)
     output_path = pdf_path
     if args.output_path is not None:

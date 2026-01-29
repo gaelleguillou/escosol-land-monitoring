@@ -89,7 +89,7 @@ if __name__ == "__main__":
     csv_path = Path(args.csv_path)
     output_path = csv_path
     if args.output_path:
-        output_path = args.output_path
+        output_path = Path(args.output_path)
 
     communes = pd.read_csv(csv_path / "20230823-communes-departement-region.csv")
     ae_data = pd.read_csv(csv_path / "ae_year_links.csv")
