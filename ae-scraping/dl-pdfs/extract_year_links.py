@@ -1,11 +1,10 @@
 # Access pages and extract links to avis projet x année
-
-import pandas as pd
+import re
+from urllib.parse import urljoin
 
 import httpx
+import pandas as pd
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
-import re
 
 
 def get_mrae_links(base_url=None, region=None):

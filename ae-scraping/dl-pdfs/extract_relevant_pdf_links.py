@@ -1,7 +1,8 @@
+from urllib.parse import urljoin
+
 import httpx
 import pandas as pd
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
 from tqdm import tqdm
 
 
