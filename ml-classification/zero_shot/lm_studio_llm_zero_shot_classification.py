@@ -9,24 +9,30 @@ from sklearn.metrics import classification_report
 from tqdm import tqdm
 
 MODELS_CONFIG = [
-    # {
-    #    "model_id": "mistralai/ministral-3-3b-instruct-2512",
-    #    "model_config": {
-    #        "contextLength": 32768,
-    #    },
-    # },
+    {
+        "model_id": "mistralai/ministral-3-3b-instruct-2512",
+        "model_config": {
+            "contextLength": 32768,
+        },
+    },
     # {
     #    "model_id": "ministral-3-8b-instruct-2512",
     #    "model_config": {
     #        "contextLength": 32768,
     #    },
     # },
-    {
-        "model_id": "smollm3-3b-mlx",
-        "model_config": {
-            "contextLength": 32768,
-        },
-    },
+    # {
+    #    "model_id": "llama-3.2-3b-instruct",
+    #    "model_config": {
+    #        "contextLength": 32768,
+    #    },
+    # },
+    # {
+    #    "model_id": "liquid/lfm2.5-1.2b",
+    #    "model_config": {
+    #        "contextLength": 32768,
+    #    },
+    # },
 ]
 
 output_json_schema = {
@@ -98,16 +104,32 @@ def run_inference(
         chat.add_user_message(pdf_text)
 
         start_time = time.time()
-        prediction = model.respond(
-            chat, response_format=output_json_schema, config={"temperature": 0.05}
-        )
+        with tqdm(
+            total=100,
+            desc=f"Processing {pdf_name}",
+            unit="%",
+            leave=False,
+        ) as inf_bar:
+            prediction = model.respond(
+                chat,
+                response_format=output_json_schema,
+                config={"temperature": 0.05, "maxTokens": 3000},
+                on_prompt_processing_progress=(
+                    lambda progress: inf_bar.update(
+                        round(progress * 100, 2) - inf_bar.n
+                    )
+                ),
+            )
 
         total_time = time.time() - start_time
         res_dict["prediction_time"] = total_time
-
-        # Create predicted score matrix
-        for label, score in prediction.parsed["scores"].items():  # type: ignore
-            res_dict[LABELS_MAP[label] + "_score"] = score
+        if not prediction.stats.stop_reason == "maxPredictedTokensReached":
+            # Create predicted score matrix
+            for label, score in prediction.parsed["scores"].items():  # type: ignore
+                res_dict[LABELS_MAP[label] + "_score"] = score
+        else:
+            for label in LABELS_MAP:  # type: ignore
+                res_dict[label + "_score"] = 0
 
         res_dict["contexts"] = prediction.parsed["contexts"]
         res_dict["explanation"] = prediction.parsed["explanation"]
@@ -142,8 +164,8 @@ def compute_classification_metrics(result_df: pl.DataFrame) -> dict:
 
 
 if __name__ == "__main__":
-    pdf_df = pl.read_parquet("ml-classification/datasets/pdf_preprocessed_df.parquet")
-    system_prompt = Path("ml-classification/prompt.md").read_text()
+    pdf_df = pl.read_parquet("./ml-classification/datasets/pdf_preprocessed_df.parquet")
+    system_prompt = Path("./ml-classification/zero_shot/prompt.md").read_text()
 
     for config in MODELS_CONFIG:
         result_df = run_inference(config, pdf_df, system_prompt)
