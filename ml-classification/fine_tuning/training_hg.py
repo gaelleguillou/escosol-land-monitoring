@@ -71,7 +71,7 @@ if __name__ == "__main__":
     )
 
     classified_pdf = pd.read_csv(
-        "/Users/luis/projets/escosol/escosol-land-monitoring/ml-classification/datasets/labels.csv"
+        "/Users/luis/projets/escosol/escosol-land-monitoring/ml-classification/datasets/pdf_with_labels.csv"
     )
 
     classified_pdf["is_artifical_surface"] = classified_pdf["land_type"].isin(
