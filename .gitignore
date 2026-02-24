@@ -215,3 +215,9 @@ __marimo__/
 
 #experiences results
 llm_results/*
+
+# VS code
+.vscode/launch.json
+
+# OCS analysis
+ocs/escosol.duckdb
