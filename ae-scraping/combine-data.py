@@ -1,5 +1,8 @@
-import pandas as pd
 import re
+from argparse import ArgumentParser
+from pathlib import Path
+
+import pandas as pd
 
 
 def extract_data_title(text):
@@ -62,10 +65,36 @@ def extract_data_title(text):
 
 
 if __name__ == "__main__":
-    communes = pd.read_csv("dl-pdfs/data/20230823-communes-departement-region.csv")
-    ae_data = pd.read_csv("dl-pdfs/data/ae_year_links.csv")
-    metadata = pd.read_csv("dl-pdfs/data/metadata_pdfs.csv")
-    extracted_data = pd.read_csv("pdf-to-data/data/pdf_extraction_results.csv")
+    arg_parser = ArgumentParser(
+        "combine-data",
+        description="Combine all extracted data from Aes "
+        "(either metadata or extracted PDF data in two files) "
+        "in two files: combined_full_table.csv "
+        "and combined_filtered_table.csv.",
+    )
+    arg_parser.add_argument(
+        "csv_path",
+        help="Path of the folder containing all previously created CSV files."
+        "containing metadata and extracted PDFs data.",
+    )
+    arg_parser.add_argument(
+        "-o",
+        "-output_path",
+        help="Path of the folder where to store combined_full_table.csv and combined_filtered_table.csv."
+        "Default to csv_path.",
+        dest="output_path",
+    )
+    args = arg_parser.parse_args()
+
+    csv_path = Path(args.csv_path)
+    output_path = csv_path
+    if args.output_path:
+        output_path = Path(args.output_path)
+
+    communes = pd.read_csv(csv_path / "20230823-communes-departement-region.csv")
+    ae_data = pd.read_csv(csv_path / "ae_year_links.csv")
+    metadata = pd.read_csv(csv_path / "metadata_pdfs.csv")
+    extracted_data = pd.read_csv(csv_path / "pdf_extraction_results.csv")
 
     merged_data = metadata.merge(
         ae_data[["year_url", "region", "year"]], on="year_url", how="left"
@@ -124,5 +153,5 @@ if __name__ == "__main__":
         ]
     ]
 
-    full_table.to_csv("pdf-to-data/data/combined_full_table.csv", index=False)
-    filtered_table.to_csv("pdf-to-data/data/combined_filtered_table.csv", index=False)
+    full_table.to_csv(output_path / "combined_full_table.csv", index=False)
+    filtered_table.to_csv(output_path / "combined_filtered_table.csv", index=False)

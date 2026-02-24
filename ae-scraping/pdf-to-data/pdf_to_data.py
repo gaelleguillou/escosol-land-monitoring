@@ -1,14 +1,18 @@
-import re
 import os
+import re
+from argparse import ArgumentParser
+from pathlib import Path
+
 import pandas as pd
 import pymupdf
+from tqdm import tqdm
 
 # Code copied from the data4good sufficiency project
 # https://github.com/dataforgoodfr/13_democratiser_sobriete
 # Which covered similar issues of PDF text extraction
 
 
-def get_raw_text_pymupdf(path: str) -> str:
+def get_raw_text_pymupdf(path: Path) -> str:
     """
     Extract raw text from a PDF using pymupdf.
     Much faster processing but lower-quality output compared to markdown.
@@ -90,20 +94,20 @@ def extraire_max_mwc(text):
     return max(valeurs)
 
 
-def process_all_pdfs(folder_path: str) -> pd.DataFrame:
+def process_all_pdfs(folder_path: Path, output_path: Path):
     """
     Process all PDF files in the specified folder
-    and extract land surface and power data.
+    and extract land surface and power data then save it as a CSV file in output_path folder.
     """
     headers = ["pdf_name", "land_surface_ha", "power_mwc"]
 
     results = []
     pdf_files = [f for f in os.listdir(folder_path) if f.lower().endswith(".pdf")]
 
-    for filename in pdf_files:
+    for filename in tqdm(pdf_files):
         try:
             # 1. Extraction texte brut
-            raw_text = get_raw_text_pymupdf(os.path.join(folder_path, filename))
+            raw_text = get_raw_text_pymupdf(folder_path / filename)
 
             # 2. Extraction du contexte
             contexte = extract_context(raw_text)
@@ -126,11 +130,32 @@ def process_all_pdfs(folder_path: str) -> pd.DataFrame:
         except Exception as e:
             print(f"Erreur sur {filename}: {e}")
 
-    return pd.DataFrame(results, columns=headers).to_csv(
-        "data/pdf_extraction_results.csv", index=False
+    pd.DataFrame(results, columns=headers).to_csv(
+        output_path / "pdf_extraction_results.csv", index=False
     )
 
 
 if __name__ == "__main__":
-    folder_path = "../escosol-land-monitoring/ae-scraping/dl-pdfs/data/downloads_pdf"
-    process_all_pdfs(folder_path)
+    arg_parser = ArgumentParser(
+        "pdf_to_data",
+        description="Extract data from AE PDFs. Result is saved in a file pdf_extraction_result.csv.",
+    )
+    arg_parser.add_argument(
+        "pdf_path",
+        help="Path of the folder where are PDFs are located.",
+    )
+
+    arg_parser.add_argument(
+        "-o",
+        "--output_path",
+        help="Path of the folder where the CSV containing extracted data will be saved. Default to pdf_path.",
+        dest="output_path",
+    )
+
+    args = arg_parser.parse_args()
+    pdf_path = Path(args.pdf_path)
+    output_path = pdf_path
+    if args.output_path is not None:
+        output_path = Path(args.output_path)
+
+    process_all_pdfs(pdf_path, output_path)

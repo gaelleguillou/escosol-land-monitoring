@@ -1,7 +1,10 @@
+from argparse import ArgumentParser
+from pathlib import Path
+from urllib.parse import urljoin
+
 import httpx
 import pandas as pd
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
 from tqdm import tqdm
 
 
@@ -56,14 +59,38 @@ def get_pdf_metadata(base_url=None):
 
 
 if __name__ == "__main__":
+    arg_parser = ArgumentParser(
+        "extract_relevant_pdf_links",
+        description="Program that scrapes the links of PDF that are relevant for the project. "
+        "Also extracts metadata from the PDF web page."
+        "Needs the CSV file ae_year_links.csv as input."
+        "Output a new CSV file metadata_pdfs.csv.",
+    )
+    arg_parser.add_argument(
+        "ae_year_links_csv_filepath", help="Path to the csv file ae_year_links.csv."
+    )
+    arg_parser.add_argument(
+        "-o",
+        "--output_path",
+        help="Path where to output the resulting metadata_pdfs.csv file."
+        "Default to same folder as ae_year_links.csv.",
+        dest="output_path",
+    )
+
+    args = arg_parser.parse_args()
+    ae_year_links_csv_filepath = Path(args.ae_year_links_csv_filepath)
+    output_path = ae_year_links_csv_filepath.parent
+    if args.output_path is not None:
+        output_path = Path(args.output_path)
+
     results = []
-    year_links = pd.read_csv("data/ae_year_links.csv")
-    for _, row in tqdm(year_links.iterrows()):
+    year_links = pd.read_csv(ae_year_links_csv_filepath)
+    for _, row in tqdm(year_links.iterrows(), total=year_links.shape[0]):
         data = get_pdf_metadata(row["year_url"])
         if data:
             results.extend(data)
         else:
-            print(f"No PDF found for {row['year_url']}")
+            tqdm.write(f"No PDF found for {row['year_url']}")
     df_results = pd.DataFrame(results)
     df_results.columns = ["year_url", "title", "description", "pdf_link", "pdf_name"]
-    df_results.to_csv("data/metadata_pdfs.csv", index=False)
+    df_results.to_csv(output_path / "metadata_pdfs.csv", index=False)

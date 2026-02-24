@@ -1,13 +1,14 @@
-import os
-import time
-import random
-import requests
 import logging
-import pandas as pd
+import os
+import random
+import time
+from argparse import ArgumentParser
+from pathlib import Path
 
-CSV_FILE = "data/metadata_pdfs.csv"
+import pandas as pd
+import requests
+
 COLUMN_NAME = "pdf_link"
-OUTPUT_DIR = "data/downloads_pdf"
 LOG_FILE = "download_status.log"
 TIMEOUT = 15
 
@@ -33,12 +34,12 @@ USER_AGENTS = [
 ]
 
 
-def download_pdfs():
-    if not os.path.exists(OUTPUT_DIR):
-        os.makedirs(OUTPUT_DIR)
+def download_pdfs(metadata_pdf_csv_filepath: Path, output_dir: Path):
+    if not output_dir.exists():
+        os.makedirs(output_dir)
 
     try:
-        df = pd.read_csv(CSV_FILE)
+        df = pd.read_csv(metadata_pdf_csv_filepath)
         urls = df[COLUMN_NAME].dropna().unique().tolist()
     except Exception as e:
         print(f"Erreur lors de la lecture du CSV : {e}")
@@ -52,9 +53,9 @@ def download_pdfs():
         if not file_name.lower().endswith(".pdf"):
             file_name += ".pdf"
 
-        file_path = os.path.join(OUTPUT_DIR, file_name)
+        file_path = output_dir / file_name
 
-        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+        if file_path.exists() and file_path.stat().st_size > 0:
             continue
 
         try:
@@ -70,13 +71,33 @@ def download_pdfs():
 
             logging.info(f"SUCCÈS: {file_name}")
             print(f"[{i}/{total}] ✅ OK : {file_name}")
-            time.sleep(random.uniform(1.5, 4.0))
+            time.sleep(random.uniform(0.5, 1))
 
         except Exception as e:
             logging.error(f"ERREUR sur {url}: {e}")
             print(f"[{i}/{total}] ⚠️ Échec : {url[:30]}...")
-            time.sleep(5)
+            time.sleep(3)
 
 
 if __name__ == "__main__":
-    download_pdfs()
+    arg_parser = ArgumentParser(
+        "download_pdfs",
+        description="Program that downloads AE pdfs. Needs as input a metadata_pdfs.csv file.",
+    )
+    arg_parser.add_argument(
+        "metadata_pdf_csv_filepath", help="Path to the csv file metadata_dfs.csv."
+    )
+    arg_parser.add_argument(
+        "-o",
+        "--output_path",
+        help="Path of the folder where to store PDF files. Default to ../downloads_pdf folder.",
+        dest="output_path",
+    )
+
+    args = arg_parser.parse_args()
+    metadata_pdf_csv_filepath = Path(args.metadata_pdf_csv_filepath)
+    output_path = Path("downloads_pdf")
+    if args.output_path is not None:
+        output_path = Path(args.output_path)
+
+    download_pdfs(metadata_pdf_csv_filepath, output_path)
