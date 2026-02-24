@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 import polars as pl
-from utils import get_raw_text_pymupdf
+from .utils import get_raw_text_pymupdf
 
 
 def clean_text(raw_test: str) -> str:

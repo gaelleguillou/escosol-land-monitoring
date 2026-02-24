@@ -12,7 +12,7 @@ from transformers import (
 from sklearn.model_selection import train_test_split
 
 from utils import get_raw_text_pymupdf
-from dataset_helpers import PDFChunkDataset
+from ml_classification.fine_tuning.dataset_helpers import PDFChunkDataset
 
 metric = evaluate.load("accuracy")
 MODEL_NAME = "distilbert/distilbert-base-multilingual-cased"

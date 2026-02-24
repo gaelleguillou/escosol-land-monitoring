@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 
 from sklearn.model_selection import train_test_split
 from utils import get_raw_text_pymupdf
-from dataset_helpers import PDFChunkDataset
+from ml_classification.fine_tuning.dataset_helpers import PDFChunkDataset
 
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, AutoConfig
 

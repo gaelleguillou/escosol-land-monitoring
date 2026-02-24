@@ -2,7 +2,7 @@ from pathlib import Path
 import statistics
 
 import pandas as pd
-from dataset_helpers import chunk_text
+from ml_classification.fine_tuning.dataset_helpers import chunk_text
 from transformers import AutoTokenizer, pipeline
 from utils import get_raw_text_pymupdf
 
