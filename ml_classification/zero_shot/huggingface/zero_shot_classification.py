@@ -26,7 +26,6 @@ classifier = pipeline(
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
 
-# ---- Classification d'un document ----
 def classify_document_zero_shot(text, labels, top_k=5):
     chunks = chunk_text(tokenizer, text, max_tokens=MAX_CHUNK_TOKENS, stride=0)
 
@@ -46,7 +45,6 @@ def classify_document_zero_shot(text, labels, top_k=5):
     return agg_scores_mean, agg_scores_max, chunk_scores
 
 
-# ---- Exemple d'utilisation ----
 if __name__ == "__main__":
     pdf_path = Path(
         "/Users/luis/projets/escosol/escosol-land-monitoring/ae-scraping/data/downloads_pdf"

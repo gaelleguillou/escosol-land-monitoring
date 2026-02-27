@@ -21,7 +21,6 @@ EPOCHS = 10
 NUM_LABELS = 2
 
 
-# ---------- Lightning Module ----------
 class DebertaPDFClassifier(L.LightningModule):
     def __init__(self, num_labels=NUM_LABELS, lr=LR):
         super().__init__()
@@ -52,7 +51,6 @@ class DebertaPDFClassifier(L.LightningModule):
         return torch.optim.AdamW(self.parameters(), lr=self.hparams.lr)
 
 
-# ---------- Train ----------
 def train_pdf_classifier(pdf_texts, pdf_labels):
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
@@ -81,10 +79,6 @@ def train_pdf_classifier(pdf_texts, pdf_labels):
     trainer.fit(model, train_loader, val_loader)
     return model, tokenizer
 
-
-# ---------- Example Usage ----------
-# model, tokenizer = train_pdf_classifier(pdf_texts, pdf_labels)
-# print(predict_pdf(model, tokenizer, pdf_texts[0], label_names))
 
 if __name__ == "__main__":
     pdf_path = Path(
