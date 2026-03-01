@@ -1,7 +1,10 @@
+import argparse
 import re
 from pathlib import Path
 
 import polars as pl
+from tqdm import tqdm
+
 from .utils import get_raw_text_pymupdf
 
 
@@ -40,61 +43,80 @@ def extract_context_index_positions(
     return res
 
 
-def create_dataset(pdf_df: pl.DataFrame, pdf_dir: Path, output_dir: Path):
-    pdf_df = pdf_df.with_columns(
-        pl.col("pdf_name")
-        .map_elements(lambda x: extract_text(pdf_dir / x), return_dtype=pl.String)
-        .alias("pdf_text"),  # Extract text from PDF and clean it
-        pl.col("context")
-        .map_elements(clean_text, return_dtype=pl.String)
-        .str.split("[SEP]")
-        .alias(
-            "contexts"
-        ),  # Convert context string into list of cleaned context strings
-    )
+def create_dataset(
+    pdf_dir: Path, output_filepath: Path, pdfs_labels_df: pl.DataFrame | None = None
+):
+    pdfs_to_select = None
+    if pdfs_labels_df is not None:
+        pdfs_to_select = pdfs_labels_df.get_column("pdf_name").unique().to_list()
 
-    pdf_df = pdf_df.with_columns(
-        pl.struct("pdf_text", "contexts")
-        .map_elements(
-            lambda x: extract_context_index_positions(x["pdf_text"], x["contexts"]),
-            return_dtype=pl.List(pl.List(pl.Int64)),
+    pdfs_dicts = []
+    for pdf_path in tqdm(pdf_dir.glob("*.pdf"), desc="Reading PDFs"):
+        pdf_name = pdf_path.name
+        if (pdfs_to_select is not None) and (pdf_name not in pdfs_to_select):
+            continue
+
+        pdf_text = extract_text(pdf_path)
+
+        pdfs_dicts.append({"pdf_name": pdf_name, "pdf_text": pdf_text})
+
+    preprocessed_pdfs_df = pl.DataFrame(pdfs_dicts)
+
+    if pdfs_labels_df is not None:
+        preprocessed_pdfs_df = preprocessed_pdfs_df.join(pdfs_labels_df, on="pdf_name")
+        preprocessed_pdfs_df = preprocessed_pdfs_df.with_columns(
+            pl.col("context")
+            .map_elements(clean_text, return_dtype=pl.String)
+            .str.split("[SEP]")
+            .alias(
+                "contexts"
+            ),  # Convert context string into list of cleaned context strings
         )
-        .alias(
-            "contexts_locations"
-        )  # Create a list of tuple containing starting index of context and lengths of the context span.
+
+        preprocessed_pdfs_df = preprocessed_pdfs_df.with_columns(
+            pl.struct("pdf_text", "contexts")
+            .map_elements(
+                lambda x: extract_context_index_positions(x["pdf_text"], x["contexts"]),
+                return_dtype=pl.List(pl.List(pl.Int64)),
+            )
+            .alias(
+                "contexts_locations"
+            )  # Create a list of tuple containing starting index of context and lengths of the context span.
+        )
+
+        preprocessed_pdfs_df = preprocessed_pdfs_df.with_columns(
+            pl.col("land_type").str.split(", ").list.sort().alias("labels")
+        )
+
+    preprocessed_pdfs_df.filter(pl.col("pdf_text").is_null().not_()).write_parquet(
+        output_filepath
     )
-
-    pdf_df = pdf_df.with_columns(
-        pl.col("land_type").str.split(", ").list.sort().alias("labels")
-    )
-
-    columns_to_take = [
-        "pdf_name",
-        "context",
-        "page",
-        "land_type",
-        "pdf_text",
-        "contexts",
-        "contexts_locations",
-        "labels",
-    ]
-
-    pdf_df.filter(pl.col("pdf_text").is_null().not_()).select(
-        columns_to_take
-    ).write_parquet(output_dir / "pdf_preprocessed_df.parquet")
 
 
 if __name__ == "__main__":
-    pdf_df = pl.read_csv(
-        "/Users/luis/projets/escosol/escosol-land-monitoring/ml-classification/datasets/pdf_with_labels.csv"
+    arg_parser = argparse.ArgumentParser(
+        description="Create a dataset with preprocessed PDFs ready to be fed into the models."
     )
 
+    arg_parser.add_argument(
+        "pdf_path", help="Path of the folder containing PDFs to be processed"
+    )
+
+    arg_parser.add_argument("output_path", help="Path where to output parquet file.")
+
+    arg_parser.add_argument(
+        "--labels_dataset",
+        help="CSV dataset containing labels for each PDF. Needed to create a preprocessed file with labels for model training or evaluation.",
+    )
+
+    args = arg_parser.parse_args()
+
+    pdfs_labels_df = None
+    if (labels_dataset := args.labels_dataset) is not None:
+        pdfs_labels_df = pl.read_csv(labels_dataset)
+
     create_dataset(
-        pdf_df,
-        Path(
-            "/Users/luis/projets/escosol/escosol-land-monitoring/ae-scraping/data/downloads_pdf"
-        ),
-        Path(
-            "/Users/luis/projets/escosol/escosol-land-monitoring/ml-classification/datasets"
-        ),
+        Path(args.pdf_path),
+        Path(args.output_path),
+        pdfs_labels_df,
     )
