@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load static labeling_tags %}
+
+{% block content %}
+<div class="row">
+    {% if doc %}
+    <!-- Left Side: Text & Contexts -->
+    <div class="col-md-7">
+        <div class="card h-100">
+            <div class="card-header bg-light">
+                <strong>PDF: {{ doc.pdf_name }}</strong>
+                <small class="float-end">ID: {{ doc.id }}</small>
+            </div>
+            <div class="card-body overflow-auto" style="max-height: 600px;">
+                <div id="text-container" class="text-content"></div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Right Side: Predictions & Validation -->
+    <div class="col-md-5">
+        <div class="card-footer">
+                <div class="alert alert-info">
+                    <strong>Justification de la prédiction:</strong> {{ doc.explanation|default:"No explanation provided." }}
+                </div>
+            </div>
+        <div class="card h-80">
+            <div class="card-header bg-primary text-white">
+                <strong>Validation</strong>
+            </div>
+            <div class="card-body">
+                <form id="label-form" method="POST" action="">
+                    {% csrf_token %}
+                    <input type="hidden" name="doc_id" value="{{ doc.id }}">
+                    
+                    <p class="text-muted small">Cocher les cases pour valider ou corriger une prédiction</p>
+                    
+                    <div class="d-grid gap-3">
+                        {% render_label_widget doc %}
+                    </div>
+                </form>
+
+                <div class="d-grid gap-2 mt-4">
+                    <button type="button" class="btn btn-primary btn-lg" onclick="submitForm()">Sauvegarder et passer à la suivante</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- No more documents -->
+    <div class="col-12 text-center mt-5">
+        <h1>Tous les documents ont été validés!</h1>
+        <p>Vous avez terminé.</p>
+        <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block script %}
+<script src="{% static 'js/labeling.js' %}"></script>
+<script>
+    // Pass data to JS from Django context
+    const docData = {
+        text: "{{ doc.pdf_text_raw|escapejs }}",
+        contexts: {{ doc.contexts|safe|default:"[]" }}
+    };
+    
+    // Initialize highlighting on load
+    highlightContexts(docData.text, docData.contexts);
+</script>
+{% endblock %}

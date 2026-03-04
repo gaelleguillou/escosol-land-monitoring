@@ -43,3 +43,8 @@ dev = [
     "python-lsp-server>=1.14.0",
     "ruff>=0.14.14",
 ]
+
+[tool.uv.workspace]
+members = [
+    "ae_labeling",
+]

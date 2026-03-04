@@ -1,0 +1,14 @@
+
+{% for label,v in preds.items  %}
+<div class="card border-0 shadow-sm bg-light p-3 label-card" id="{{ label }}_card">
+    <div class="d-flex align-items-center mb-2">
+        <input class="form-check-input me-2" type="checkbox" name="{{ label }}" id="{{ label }}_checkbox" {% if v.pred %}checked{% endif %}>
+        <label class="form-check-label fw-bold" for="{{ label }}_checkbox">{{ v.pretty_name }}</label>
+        <span class="badge bg-secondary ms-auto" style="font-size: 0.8em;">{{ v.score|floatformat:2 }}</span>
+    </div>
+    <div class="progress" role="progressbar" aria-valuenow="{{ v.score }}" aria-valuemin="0" aria-valuemax="1">
+        <div class="progress-bar"  style="width: {{ v.bar_size }}%" ></div>
+    </div>
+</div>
+{% endfor %}
+
