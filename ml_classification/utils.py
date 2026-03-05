@@ -1,7 +1,7 @@
 from pathlib import Path
 
-import pymupdf
 import numpy as np
+import pymupdf
 
 
 def get_raw_text_pymupdf(path: Path) -> str:
@@ -11,7 +11,7 @@ def get_raw_text_pymupdf(path: Path) -> str:
     """
     with pymupdf.open(path) as doc:
         all_texts = [page.get_text() for page in doc]
-        text = chr(12).join(all_texts)
+        text = r"\n".join(all_texts)
         return text
 
 

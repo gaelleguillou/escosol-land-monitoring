@@ -1,18 +1,17 @@
 import argparse
-from datetime import datetime
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
 
 import polars as pl
 from tqdm import tqdm
 
-from ...dataset_creation import extract_text
 from .config import (
-    MODELS_CONFIG,
     LABELS,
     LABELS_MAP,
     LLM_OUTPUT_JSON_SCHEMA,
+    MODELS_CONFIG,
 )
 from .lm_studio import get_model, run_inference
 
@@ -65,24 +64,6 @@ def run_pdfs_inference(
     return result_df
 
 
-def create_pdf_df(
-    pdfs_path: Path, pdfs_to_skip: list[str] | None = None
-) -> pl.DataFrame:
-    res = []
-
-    for pdf_path in tqdm(pdfs_path.glob("*.pdf")):
-        pdf_name = pdf_path.name
-
-        if (pdfs_to_skip is not None) and (pdf_name in pdfs_to_skip):
-            continue
-
-        text = extract_text(pdf_path)
-
-        res.append({"pdf_name": pdf_name, "pdf_text": text})
-
-    return pl.DataFrame(res)
-
-
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser(
         "lm_studio_zero_shot_inference",
@@ -90,8 +71,8 @@ if __name__ == "__main__":
     )
 
     arg_parser.add_argument(
-        "pdfs_path",
-        help="Path of the pdf file to run inference on.",
+        "pdf_parquet_filepath",
+        help="Path of the parquet file containing PDF data to run inference on. Use module datset_creation to generate it",
     )
 
     arg_parser.add_argument(
@@ -128,7 +109,8 @@ if __name__ == "__main__":
         output_df = pl.read_parquet(result_output_filepath)
         pdfs_already_processed = output_df.get_column("pdf_name").unique().to_list()
 
-    pdf_df = create_pdf_df(Path(args.pdfs_path), pdfs_already_processed)
+    pdf_df = pl.read_parquet(Path(args.pdf_parquet_filepath))
+
     system_prompt = (Path(__file__).parent / "prompt.md").read_text()
 
     model_id = args.model_id
