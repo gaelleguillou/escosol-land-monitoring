@@ -1,0 +1,19 @@
+/* Custom styling for predictions tables in Django admin */
+.predictions-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 5px;
+}
+
+.predictions-table td {
+    padding: 4px 8px;
+    border-bottom: 1px solid #ddd;
+}
+
+.predictions-table tr:last-child td {
+    border-bottom: none;
+}
+
+.predictions-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}

@@ -20,15 +20,16 @@ RUN uv venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 RUN uv sync
 
-# Copy the application code
-COPY . .
 
 # Create non-root user for security
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
+
+# Copy the application code
+COPY . .
+
 # Expose port
 EXPOSE 8000
 
-# Run with Gunicorn for production (or python manage.py runserver for dev)
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "ae_labeling.wsgi:application"]
+CMD ["uv", "run", "manage.py", "runserver"]

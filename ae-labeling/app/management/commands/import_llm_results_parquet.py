@@ -27,41 +27,42 @@ class Command(BaseCommand):
             "surfaces_naturelles",
         ]
 
-        cols_to_get = [e + "_pred" for e in label_names] + [
-            e + "_score" for e in label_names
-        ]
-
-        df = df.with_columns(pl.struct(cols_to_get).alias("original_predictions"))
-
         created_count = 0
-        skipped_count = 0
+        updated_count = 0
         for row in df.iter_rows(named=True):
             # Check if document already exists
-            doc, created = Document.objects.get_or_create(
+
+            original_predictions = {}
+            for label in label_names:
+                pred = row.get(f"{label}_pred")
+                score = row.get(f"{label}_score")
+                original_predictions[label] = {"pred": pred, "score": score}
+
+            doc, updated = Document.objects.update_or_create(
                 pdf_name=row["pdf_name"],
                 defaults={
-                    "pdf_text": str(
-                        row["pdf_text"]
+                    "pdf_text": str(row["pdf_text"]).replace(
+                        "\x00", ""
                     ),  # There is NULL bytes in the texts
-                    "pdf_text_raw": str(row["pdf_text_raw"]).replace(
+                    "pdf_text_raw": row.get("pdf_text_raw", "").replace(
                         "\x00", ""
                     ),  # There is NULL bytes in the texts
                     "contexts": row.get("contexts", []),
                     "explanation": str(row.get("explanation", "")),
                     "prediction_time": float(row.get("prediction_time", 0)),
-                    "original_predictions": row.get("original_predictions", {}),
+                    "original_predictions": original_predictions,
                 },
             )
-            if created:
+            if updated:
                 created_count += 1
             else:
-                skipped_count += 1
+                updated_count += 1
             doc.save()
 
         self.stdout.write(
             self.style.SUCCESS(f"Successfully imported {created_count} documents.")
         )
-        if skipped_count > 0:
+        if updated_count > 0:
             self.stdout.write(
-                self.style.WARNING(f"Skipped {skipped_count} existing documents.")
+                self.style.WARNING(f"Updated {updated_count} existing documents.")
             )

@@ -15,6 +15,7 @@ def clean_text(raw_text: str | None) -> str | None:
         r"==> picture \[[0-9]{,4} x [0-9]{,4}\] intentionally omitted <==", "", raw_text
     )  # Remove image placeholders
     text = re.sub(r" {2,}", " ", text)  # Remove duplicate white spaces
+    text = text.replace("\x00", "")
     return text
 
 

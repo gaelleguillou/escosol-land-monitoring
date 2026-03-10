@@ -14,9 +14,9 @@ def render_label_widget(doc: Document):
     labels = settings.AE_LABELS
     for label in labels:
         return_dict[label] = {
-            "score": original_predictions[f"{label}_score"],
-            "bar_size": int(original_predictions[f"{label}_score"] * 100),
-            "pred": original_predictions[f"{label}_pred"],
+            "score": original_predictions[label]["score"],
+            "bar_size": int(original_predictions[label]["score"] * 100),
+            "pred": original_predictions[label]["pred"],
             "pretty_name": label.replace("_", " ").capitalize(),
         }
 

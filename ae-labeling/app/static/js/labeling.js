@@ -1,35 +1,47 @@
-function highlightContexts(text, contexts) {
+// Function that renders Markdown then highlights context strings
+function highlightContextsWithMarkdown(text, contexts) {
     const container = document.getElementById('text-container');
-    if (!container || !contexts || contexts.length === 0) {
-        container.textContent = text;
-        return;
-    }
-
-    // Sort contexts by length (longest first) to avoid partial replacements
-    const sortedContexts = contexts.sort((a, b) => b.length - a.length);
     
-    let highlightedText = text;
+    // Parse Markdown to HTML using marked.js
+    let htmlContent = marked.parse(text);
     
-    sortedContexts.forEach(context => {
-        // Escape special regex characters
-        const escapedContext = context.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        // Create Regex with global flag but case sensitive
-        // We use a lookahead to avoid overlapping replacements issues in simple JS
-        const regex = new RegExp(escapedContext, 'g');
-        
-        highlightedText = highlightedText.replace(regex, match => {
-            console.log("Match found")
-            return `<span class="highlight">${match}</span>`;
+    if (contexts && contexts.length > 0) {
+        // For each context string, find and wrap it with <mark> tags
+        contexts.forEach(context => {
+            const searchText = context.trim();
+            
+            if (searchText) {
+                // Escape special regex characters in the search text
+                const escapedText = escapeRegExp(searchText);
+                
+                // Create a case-insensitive global regex to find all occurrences
+                const regex = new RegExp(escapedText, 'gi');
+                
+                // Replace with highlighted version
+                htmlContent = htmlContent.replace(regex, function(match) {
+                    return `<mark class="context-highlight">${match}</mark>`;
+                });
+            }
         });
-    });
+    }
+    
+    container.innerHTML = htmlContent;
+}
 
-     // Convert newlines to <br> tags after highlighting
-    highlightedText = highlightedText.replace(/\n/g, '<br>');
+// Helper to escape special regex characters
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
-    container.innerHTML = highlightedText;
+// Keep the old function for backward compatibility if needed
+function highlightContexts(text, contexts) {
+    console.warn('highlightContexts is deprecated. Use highlightContextsWithMarkdown instead.');
+    highlightContextsWithMarkdown(text, contexts);
 }
 
 function submitForm() {
     const form = document.getElementById('label-form');
     form.submit();
 }
+
+
