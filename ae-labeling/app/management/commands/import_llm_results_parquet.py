@@ -1,8 +1,7 @@
 import polars as pl
 from django.core.management.base import BaseCommand
-from app.models import Document
 
-from django.conf import settings
+from app.models import Document
 
 
 class Command(BaseCommand):

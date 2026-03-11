@@ -14,4 +14,9 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest>=7.0", "black>=23.0", "django-debug-toolbar>=6.2.0"]
+dev = [
+    "pytest>=7.0",
+    "black>=23.0",
+    "django-debug-toolbar>=6.2.0",
+    "ruff>=0.15.5",
+]
