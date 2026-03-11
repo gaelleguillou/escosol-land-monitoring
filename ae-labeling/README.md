@@ -2,7 +2,7 @@
 
 Application web Django pour l'annotation et la gestion de documents PDF avec intégration LLM.
 
-## 📋 Description
+## Description
 
 Cette application permet d'importer des documents au format Parquet, de les visualiser et de gérer leurs annotations via une interface web. Elle utilise :
 
@@ -11,14 +11,12 @@ Cette application permet d'importer des documents au format Parquet, de les visu
 - **Polars** pour le traitement des fichiers Parquet
 - **uv** comme gestionnaire de packages Python
 
-## 🚀 Prérequis
+## Prérequis
 
 - Docker et Docker Compose installés
 - Un fichier `.env` configuré (voir section Configuration)
 
-## ⚙️ Configuration
-
-### 1. Créer le fichier `.env`
+## Configuration
 
 Copiez le modèle suivant dans un fichier `.env` à la racine du projet :
 
@@ -37,7 +35,7 @@ PG_PASSWORD=votre-mot-de-passe-securise
 
 > **Note** : Remplacez les valeurs par des données sécurisées en production.
 
-## 🐳 Lancement avec Docker Compose
+## Lancement avec Docker Compose
 
 ### 1. Démarrer l'application
 
@@ -86,7 +84,7 @@ docker compose exec web sh
 uv run python manage.py import_llm_results_parquet /app/data/votre_fichier.parquet
 ```
 
-## 📊 Structure des données attendue
+## Structure des données attendue
 
 Le fichier Parquet doit contenir les colonnes suivantes :
 
@@ -108,7 +106,7 @@ Les labels supportés sont :
 - `surfaces_forestieres`
 - `surfaces_naturelles`
 
-## 🔧 Commandes Docker utiles
+## Commandes Docker utiles
 
 ```bash
 # Voir les logs des conteneurs
@@ -130,7 +128,7 @@ docker compose exec web uv run python manage.py migrate
 curl http://localhost:8000/
 ```
 
-## 🗑️ Nettoyage
+## Nettoyage
 
 Pour tout nettoyer (y compris les données de la base) :
 
@@ -140,7 +138,7 @@ docker compose down -v
 
 > ⚠️ **Attention** : Cette commande supprime tous les volumes, y compris les données de PostgreSQL.
 
-## 🛠️ Développement local
+## Développement local
 
 Si vous souhaitez développer localement sans Docker :
 
@@ -160,7 +158,7 @@ uv run python manage.py migrate
 uv run python manage.py runserver
 ```
 
-## 📝 Notes importantes
+## Notes importantes
 
 1. **Persistance des données** : Les fichiers Parquet doivent être placés dans `./data/` qui est monté comme volume Docker
 2. **Sécurité** : Ne jamais utiliser les valeurs par défaut de `DJANGO_SECRET_KEY` en production
