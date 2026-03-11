@@ -1,0 +1,37 @@
+services:
+  web:
+    build: .
+    command: >
+      sh -c "uv run manage.py collectstatic --noinput &&
+              uv run manage.py migrate &&
+              gunicorn --bind 0.0.0.0:8000 ae_labeling.wsgi:application"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data              # Mount for Parquet input
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_DEBUG=${DJANGO_DEBUG:-false}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - PG_HOST=${PG_HOST}
+      - PG_DBNAME=${PG_DBNAME}
+      - PG_USER=${PG_USER}
+      - PG_PASSWORD=${PG_PASSWORD}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  db:
+      image: postgres:15-alpine
+      environment:
+        - POSTGRES_DB=${PG_DBNAME}
+        - POSTGRES_USER=${PG_USER}
+        - POSTGRES_PASSWORD=${PG_PASSWORD}
+      volumes:
+        - pgdata:/var/lib/postgresql/data
+      restart: unless-stopped
+
+volumes:
+  pgdata:

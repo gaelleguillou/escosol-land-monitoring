@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static labeling_tags %}
+
+{% block content %}
+<div class="row">
+    {% if error %}
+    <!-- Error Message -->
+    <div class="col-12 text-center mt-5">
+        <div class="alert alert-danger" role="alert">
+            <strong>{{ error }}</strong>
+        </div>
+        <a href="{% url 'labeling' %}" class="btn btn-primary">Essayer un autre document</a>
+    </div>
+    
+    {% elif doc %}
+    <!-- Left Side: Text & Contexts -->
+    <div class="col-md-7">
+        <div class="card h-100">
+            <div class="card-header bg-light">
+                <strong>PDF: {{ doc.pdf_name }}</strong>
+                <small class="float-end">ID: {{ doc.id }}</small>
+            </div>
+
+             <!-- Lock Status Indicator -->
+            {% if doc.locked_by and doc.locked_by_id != user.id %}
+            <div class="alert alert-warning mb-0" style="font-size: 0.9em;">
+                🔒 Ce document est en train d'être validé par <strong>{{ doc.locked_by.username }}</strong> 
+                depuis {{ doc.locked_at }}
+            </div>
+            {% endif %}
+
+            <div class="card-body overflow-auto" style="max-height: 600px;">
+                <article id="text-container" class="markdown-content"></article>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Right Side: Predictions & Validation -->
+    <div class="col-md-5">
+        <div class="card-footer">
+                <div class="alert alert-info">
+                    <strong>Justification de la prédiction:</strong> {{ doc.explanation|default:"No explanation provided." }}
+                </div>
+            </div>
+        <div class="card h-80">
+            <div class="card-header bg-primary text-white">
+                <strong>Validation</strong>
+            </div>
+            <div class="card-body">
+                <form id="label-form" method="POST" action="">
+                    {% csrf_token %}
+                    <input type="hidden" name="doc_id" value="{{ doc.id }}">
+                    
+                    <p class="text-muted small">Cocher les cases pour valider ou corriger une prédiction</p>
+                    
+                    <div class="d-grid gap-3">
+                        {% render_label_widget doc %}
+                    </div>
+                </form>
+
+                <div class="d-grid gap-2 mt-4">
+                    <button type="button" class="btn btn-primary btn-lg" onclick="submitForm()">Sauvegarder et passer à la suivante</button>
+                    <!-- Release Lock Button (for abandoning document) -->
+                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                            onclick="releaseLock({{ doc.id }})">
+                        Quitter sans sauvegarder
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- No more documents -->
+    <div class="col-12 text-center mt-5">
+        <h1>Tous les documents ont été validés!</h1>
+        <p>Vous avez terminé.</p>
+        <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block script %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src=" https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js "></script>
+<script src="{% static 'js/labeling.js' %}"></script>
+<script>
+    // Store CSRF token in a variable for easy access
+    const csrfToken = Cookies.get('csrftoken');
+    // Pass data to JS from Django context
+    const docData = {
+        text: "{{ doc.pdf_text|escapejs }}",
+        contexts: {{ doc.contexts|safe|default:"[]" }},
+        docId: {{ doc.id|default:"null" }}
+    };
+    
+    // Initialize highlighting on load
+    highlightContextsWithMarkdown(docData.text, docData.contexts);
+
+    let idleTimer;
+    function resetIdleTimer() {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(checkLockStatus, 5 * 60 * 1000); // Check after 5 minutes of inactivity
+    }
+    
+    document.addEventListener('mousemove', resetIdleTimer);
+    document.addEventListener('keypress', resetIdleTimer);
+    
+    // Release lock when user navigates away or closes tab
+    async function releaseLock(docId) {
+        if (!confirm("Êtes-vous sûr de vouloir quitter sans sauvegarder ?")) {
+            return;
+        }
+        
+        try {
+            const formData = new FormData();
+            formData.append('doc_id', docId);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            
+            await fetch("{% url 'release_lock' %}", {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken  // Also send in header as fallback
+                }
+            });
+        } catch (error) {
+            console.error('Error releasing lock:', error);
+        }
+        
+        window.location.href = "{% url 'labeling' %}";
+    }
+
+    // Handle page unload/refresh - release lock silently
+    function handlePageUnload() {
+        if (docData.docId && {{ doc.locked_by.id|default:"0" }} == {{ user.id }}) {
+            const formData = new FormData();
+            formData.append('doc_id', docData.docId);
+            formData.append('csrfmiddlewaretoken', csrfToken);
+            
+            navigator.sendBeacon("{% url 'release_lock' %}", formData);
+        }
+    }
+
+    // Listen for page unload events
+    window.addEventListener('beforeunload', handlePageUnload);
+    
+  
+    async function checkLockStatus() {
+        if (!docData.docId) return;
+        
+        try {
+            const response = await fetch("{% url 'check_lock_status' doc.id %}");
+            const data = await response.json();
+            
+            if (data.is_locked && data.locked_by !== "{{ request.user.username }}") {
+                alert("Ce document a été pris par un autre utilisateur. Veuillez choisir un autre document.");
+                window.location.href = "{% url 'labeling' %}";
+            }
+        } catch (error) {
+            console.error('Error checking lock status:', error);
+        }
+    }
+    
+    
+    resetIdleTimer(); // Start the timer
+</script>
+{% endblock %}
