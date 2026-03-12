@@ -17,7 +17,10 @@
                 {% if user.is_authenticated %}
                     <span class="navbar-text text-light me-3">Bonjour {{ user.username }}</span>
                     <a href="{% url 'admin:index' %}" class="btn btn-outline-light btn-sm">Interface Admin</a>
-                    <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">Se déconnecter</a>
+                    <form method="post" action="{% url 'logout' %}">
+                        {% csrf_token %}
+                        <button class="btn btn-outline-light btn-sm" type="submit">Se déconnecter</button>
+                    </form>
                 {% else %}
                     <a href="{% url 'login' %}" class="btn btn-primary btn-sm">Se connecter</a>
                 {% endif %}
