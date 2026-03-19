@@ -148,9 +148,9 @@ async def get_bretagne_archive_pdf_and_metadata() -> pd.DataFrame:
                                         "project_name": project_name,
                                         "commune_name": commune_name,
                                         "departement_name": departement_name,
-                                        "document_name": document_name,
                                         "year": year,
-                                        "document_url": urljoin(
+                                        "pdf_filename": document_name,
+                                        "pdf_url": urljoin(
                                             bretagne_archive_url, document_url
                                         ),
                                     }
