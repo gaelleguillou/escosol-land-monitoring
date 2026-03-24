@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 from archive.side import get_side_archive_pdf_urls_and_metadata
-from archive.bretagne import get_bretagne_archive_pdf_and_metadata
+from archive.bretagne import get_bretagne_archive_pdf_urls_and_metadata
 from archive.utils import download_pdfs
 
 logging.basicConfig(level=logging.INFO)
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 if __name__ == "__main__":
     arg_parser = ArgumentParser(
         description="Program that scrapes the URLs of MRAe archive website pages that list PDFs of AE."
-        "Output a new CSV file archive_pdf_links.csv and downloads the PDF files."
+        "Output a new CSV file _archive_pdf_links.csv and downloads the PDF files."
         "use --metadata-only or --metadata-filepath options to skip parts of the process.",
     )
     arg_parser.add_argument(
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     )
     arg_parser.add_argument(
         "--metadata-filepath",
-        help="Filepath to metadata file archive_pdf_links.csv."
+        help="Filepath to metadata file _archive_pdf_links.csv."
         "Use this option to download PDFs from already created archive_pdf_links.csv file and skip scraping part.",
         type=Path,
         dest="metadata_filepath",
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     arg_parser.add_argument(
         "-o",
         "--output_path",
-        help="Path where to output the resulting archive_pdf_links.csv file and downloaded PDFs files."
+        help="Path where to output the resulting _archive_pdf_links.csv file and downloaded PDFs files."
         "Default to current working directory.",
         type=Path,
         dest="output_path",
@@ -43,7 +43,6 @@ if __name__ == "__main__":
     arg_parser.add_argument(
         "--verbose", help="Set logging to debug level.", action="store_true"
     )
-
     args = arg_parser.parse_args()
 
     if args.verbose:
@@ -59,10 +58,10 @@ if __name__ == "__main__":
         df = pd.read_csv(args.metadata_filepath)
     else:
         df_side = asyncio.run(get_side_archive_pdf_urls_and_metadata())
-        df_bretagne = asyncio.run(get_bretagne_archive_pdf_and_metadata())
+        df_bretagne = asyncio.run(get_bretagne_archive_pdf_urls_and_metadata())
 
         df = pd.concat([df_side, df_bretagne])
-        df.to_csv(output_path / "archive_pdf_links.csv", index=False)
+        df.to_csv(output_path / "_archive_pdf_links.csv", index=False)
 
     if (args.metadata_only is not None) and not args.metadata_only:
         logger.info("Starting PDFs downloading...")
