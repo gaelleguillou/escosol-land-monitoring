@@ -23,7 +23,7 @@ from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
 from .config import HEADERS, RETRY_TRANSPORT, TIMEOUT_CONFIG
-from .utils import extract_departement
+from .utils import extract_departement_code
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -188,7 +188,7 @@ async def get_side_archive_pdf_urls_and_metadata() -> pd.DataFrame:
                 if "Avis" not in title:
                     continue
 
-                departement_code = extract_departement(title)
+                departement_code = extract_departement_code(title)
 
                 try:
                     author = (

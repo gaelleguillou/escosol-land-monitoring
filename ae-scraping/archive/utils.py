@@ -109,7 +109,7 @@ def clean_departement_code(raw_departement_code: str) -> str | None:
         return raw_departement_code[:2]
 
 
-def extract_departement(string: str) -> str | None:
+def extract_departement_code(string: str) -> str | None:
     """Extract departement code from a string like the title of an AE"""
     departement_code = None
 
@@ -117,3 +117,14 @@ def extract_departement(string: str) -> str | None:
     if departement_match is not None:
         departement_code = departement_match.group(1)
         return clean_departement_code(departement_code)
+
+
+def extract_commune_name(string: str) -> str | None:
+    """Try to extract the commune name from a string like an AE document title"""
+    commune_name = None
+
+    commune_name_match = re.search(r"à +([A-Za-z- ]+) +(\([0-9AB]{2,5}\)|$)", string)
+    if commune_name_match is not None:
+        commune_name = commune_name_match.group(1).strip()
+
+    return commune_name

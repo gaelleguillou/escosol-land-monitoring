@@ -42,7 +42,7 @@ async def get_guyane_archive_pdf_urls_and_metadata() -> pd.DataFrame:
     Examples
     --------
     >>> import asyncio
-    >>> df = asyncio.run(get_bretagne_archive_pdf_and_metadata())
+    >>> df = asyncio.run(get_guyane_archive_pdf_urls_and_metadata())
     """
 
     avis = []
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     arg_parser.add_argument(
         "-o",
         "--output_path",
-        help="Path where to output the resulting _archive_pdf_links.csv file and downloaded PDFs files."
+        help="Path where to output the resulting _guyane_archive_pdf_links.csv file and downloaded PDFs files."
         "Default to current working directory.",
         type=Path,
         dest="output_path",

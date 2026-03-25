@@ -39,19 +39,19 @@ async def get_bretagne_archive_pdf_urls_and_metadata() -> pd.DataFrame:
             Name of the commune where the project is located
         - departement_name : str
             Name of the departement
-        - document_name : str
-            Filename of the PDF document
-        - year : str or None
+        - year : str
             Year when the avis was published (if available)
-        - document_url : str
+        - pdf_filename : str or None
+            Filename of the PDF document
+        - pdf_url : str
             Full URL to the PDF document
 
     Examples
     --------
     >>> import asyncio
-    >>> df = asyncio.run(get_bretagne_archive_pdf_and_metadata())
+    >>> df = asyncio.run(get_bretagne_archive_pdf_urls_and_metadata())
     >>> print(df.columns.tolist())
-    ['project_name', 'commune_name', 'departement_name', 'document_name', 'year', 'document_url']
+    ['project_name', 'commune_name', 'departement_name', 'year', 'pdf_filename', 'pdf_url']
     """
 
     avis = []
