@@ -7,7 +7,6 @@ and extract relevant AE metadata and PDFs.
 import asyncio
 import logging
 import os
-import re
 from argparse import ArgumentParser
 from datetime import datetime
 from pathlib import Path
@@ -20,8 +19,8 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
-from .config import HEADERS, RETRY_TRANSPORT, TIMEOUT_CONFIG
-from .utils import download_pdfs, extract_departement_code, extract_commune_name
+from ..config import HEADERS, RETRY_TRANSPORT, TIMEOUT_CONFIG
+from ..utils import download_pdfs
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -66,8 +65,7 @@ async def get_somme_archive_pdf_urls_and_metadata() -> pd.DataFrame:
                 e_text = e.text.strip().removeprefix("-").removeprefix("•").strip()
 
                 if not any(
-                    e in e_text.lower()
-                    for e in ["solaire", "photovoltaïque", "photovoltaique"]
+                    e in e_text.lower() for e in ["solaire", "voltaïque", "voltaique"]
                 ):
                     continue
 
@@ -87,15 +85,10 @@ async def get_somme_archive_pdf_urls_and_metadata() -> pd.DataFrame:
                 document_title, publish_date_str = e_text.split(" - ")
                 publish_date = datetime.strptime(publish_date_str, "%d %B %Y")
 
-                departement_code = extract_departement_code(document_title)
-                commune_name = extract_commune_name(document_title)
-
                 avis.append(
                     {
                         "project_name": document_title,
-                        "publish_date": publish_date,
-                        "commune_name": commune_name,
-                        "departement_code": departement_code,
+                        "publish_date_scraped": publish_date,
                         "pdf_filename": document_title.replace(" ", "_").lower()
                         + ".pdf",
                         "pdf_url": pdf_url,

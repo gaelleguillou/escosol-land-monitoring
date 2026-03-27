@@ -22,8 +22,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
-from .config import HEADERS, RETRY_TRANSPORT, TIMEOUT_CONFIG
-from .utils import extract_departement_code
+from ..config import HEADERS, RETRY_TRANSPORT, TIMEOUT_CONFIG
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -188,8 +187,6 @@ async def get_side_archive_pdf_urls_and_metadata() -> pd.DataFrame:
                 if "Avis" not in title:
                     continue
 
-                departement_code = extract_departement_code(title)
-
                 try:
                     author = (
                         soup.find("p", class_="item-author")
@@ -231,12 +228,8 @@ async def get_side_archive_pdf_urls_and_metadata() -> pd.DataFrame:
                 )
 
                 result_object = {
-                    "title": title,
-                    "url": url,
-                    "author": author,
-                    "publisher": publisher,
-                    "publish_date": publish_date,
-                    "departement_code": departement_code,
+                    "project_name": title,
+                    "publish_date_scraped": publish_date,
                     "pdf_filename": pdf_filename,
                     "pdf_url": pdf_url,
                 }

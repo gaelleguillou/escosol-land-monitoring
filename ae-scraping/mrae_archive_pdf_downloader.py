@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 from archive.side import get_side_archive_pdf_urls_and_metadata
 from archive.bretagne import get_bretagne_archive_pdf_urls_and_metadata
-from archive.utils import download_pdfs
+from .utils import download_pdfs
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

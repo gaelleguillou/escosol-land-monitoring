@@ -19,8 +19,8 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
-from .config import HEADERS, RETRY_TRANSPORT, TIMEOUT_CONFIG
-from .utils import download_pdfs
+from ..config import HEADERS, RETRY_TRANSPORT, TIMEOUT_CONFIG
+from ..utils import download_pdfs
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -105,8 +105,8 @@ async def get_guyane_archive_pdf_urls_and_metadata() -> pd.DataFrame:
                 doc_title = doc.text
 
                 if not any(
-                    e in doc_title
-                    for e in ["solaire", "photovoltaïque", "photovoltaique"]
+                    e in doc_title.lower().strip()
+                    for e in ["solaire", "voltaïque", "voltaique"]
                 ):
                     continue
 
@@ -127,7 +127,8 @@ async def get_guyane_archive_pdf_urls_and_metadata() -> pd.DataFrame:
                 avis.append(
                     {
                         "project_name": doc_title,
-                        "publish_date": publish_date,
+                        "departement_code": "973",
+                        "publish_date_scraped": publish_date,
                         "pdf_filename": pdf_filename,
                         "pdf_url": pdf_url,
                     }

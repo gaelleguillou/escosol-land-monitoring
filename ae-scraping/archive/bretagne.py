@@ -16,10 +16,12 @@ from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
 
-from .config import HEADERS, RETRY_TRANSPORT, TIMEOUT_CONFIG, ARCHIVE_URLS
+from ..config import HEADERS, RETRY_TRANSPORT, TIMEOUT_CONFIG
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+ARCHIVE_URL = "https://www.bretagne.developpement-durable.gouv.fr/avis-de-l-ae-sur-projets-jusqu-en-2017-r743.html"
 
 
 async def get_bretagne_archive_pdf_urls_and_metadata() -> pd.DataFrame:
@@ -56,7 +58,7 @@ async def get_bretagne_archive_pdf_urls_and_metadata() -> pd.DataFrame:
 
     avis = []
 
-    bretagne_archive_url = ARCHIVE_URLS["Bretagne"]
+    bretagne_archive_url = ARCHIVE_URL
     async with httpx.AsyncClient(
         headers=HEADERS,
         timeout=TIMEOUT_CONFIG,
@@ -131,7 +133,7 @@ async def get_bretagne_archive_pdf_urls_and_metadata() -> pd.DataFrame:
                             project_name = sibling.text
                             if any(
                                 e in project_name.lower().strip()
-                                for e in ["solaire", "photovoltaïque", "photovoltaique"]
+                                for e in ["solaire", "voltaïque", "voltaique"]
                             ):
                                 pdf_div = sibling.next_sibling
                                 if pdf_div == "\n":
@@ -146,9 +148,9 @@ async def get_bretagne_archive_pdf_urls_and_metadata() -> pd.DataFrame:
                                 avis.append(
                                     {
                                         "project_name": project_name,
-                                        "commune_name": commune_name,
-                                        "departement_name": departement_name,
-                                        "year": year,
+                                        "commune_name_scraped": commune_name,
+                                        "departement_name_scraped": departement_name,
+                                        "year_scraped": year,
                                         "pdf_filename": document_name,
                                         "pdf_url": urljoin(
                                             bretagne_archive_url, document_url
