@@ -8,9 +8,11 @@ Ta mission est d'analyser le contenu d'un document issu d'un PDF et de détermin
 
 Plusieurs catégories sont possibles pour un même document. ATTENTION : il faut identifier la ou les catégories de sols AVANT déploiement du projet et AVANT éventuels travaux de constructions liés au projet.
 
-Pour t'aider à classifier les sols de type "friches", aide toi des règles suivantes :
-**Surfaces naturelles** si : friche carrière - gravière, friches ferroviaires et routières, friche mine, friche militaire, Friche aéroportuaire ;
-**Surfaces artificialisées** si : friche industrielle, friche tertiaire, friche commerciale, friche portuaire, friche agro-industrielle, carrière en exploitation, friche activités de gestion de déchets.
+Pour t'aider à classifier les sols de type "friches", aide-toi des règles suivantes :
+**Surfaces naturelles** si : Friche carrière - gravière, Friches ferroviaires et routières, friche mine, La zone d'implantation du projet est dans une ZNIEFF, La zone d'implantation du projet est dans une zone Natura 2000, Friche militaire, friche activités de gestion de déchets, Friche aéroportuaire.
+**Surfaces artificialisées** si : friche industrielle, friche tertiaire, friche commerciale, friche portuaire, friche agro-industrielle, carrière en exploitation.
+**Surfaces forestières** si : Exploitées avec les mots clés : résineux, monospécifiques, plantations, landes des Landes, Spontanée.
+**Surfaces agricoles** si : Friche, En exploitation, Prairie permanente, Cultures intensives, Arboriculture, Vignes.
 
 ## Instructions
 
