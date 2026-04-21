@@ -12,8 +12,9 @@ class DocumentAdmin(admin.ModelAdmin):
         "is_validated",
         "validated_by",
         "validated_at",
-        "get_prediction_summary",
-        "labeling_link",  # Add this new column
+        "get_original_prediction_summary",
+        "get_validated_prediction_summary",
+        "labeling_link",
     ]
 
     list_filter = ["is_validated", "validated_at"]
@@ -52,17 +53,27 @@ class DocumentAdmin(admin.ModelAdmin):
         ),
     )
 
-    def get_prediction_summary(self, obj):
+    def get_validated_prediction_summary(self, obj):
         """Show a summary of validated predictions"""
         if not obj.is_validated:
             return "Not validated"
 
-        true_labels = [k for k, v in obj.validated_predictions.items() if v]
+        labels = [k for k, v in obj.validated_predictions.items() if v]
+        if labels:
+            return f"{len(labels)} labels: {', '.join(labels)}"
+        return "No labels selected"
+
+    get_validated_prediction_summary.short_description = "Validated Predictions"
+
+    def get_original_prediction_summary(self, obj):
+        """Show a summary of original predictions"""
+
+        true_labels = [k for k, v in obj.original_predictions.items() if v["pred"]]
         if true_labels:
             return f"{len(true_labels)} labels: {', '.join(true_labels)}"
         return "No labels selected"
 
-    get_prediction_summary.short_description = "Predictions"
+    get_original_prediction_summary.short_description = "Original Predictions"
 
     def labeling_link(self, obj):
         """Create a link to the document's labeling page"""

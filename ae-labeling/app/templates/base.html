@@ -16,6 +16,7 @@
             <div class="d-flex">
                 {% if user.is_authenticated %}
                     <span class="navbar-text text-light me-3">Bonjour {{ user.username }}</span>
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-light btn-sm">Dashboard</a>
                     <a href="{% url 'admin:index' %}" class="btn btn-outline-light btn-sm">Interface Admin</a>
                     <form method="post" action="{% url 'logout' %}">
                         {% csrf_token %}

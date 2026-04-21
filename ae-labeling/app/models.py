@@ -81,7 +81,7 @@ class Document(models.Model):
 
     @classmethod
     def get_next_unlocked_document(cls) -> Self | None:
-        """Get next document that is not validated and not locked. Release tale locks"""
+        """Get a random document that is not validated and not locked."""
         LOCK_TIMEOUT = timedelta(minutes=60)  # Lock expires after 10 minutes
 
         now = timezone.now()
@@ -94,6 +94,8 @@ class Document(models.Model):
             expired_doc.unlock()  # Release expired lock
 
         # First try to find truly unlocked documents
-        doc = cls.objects.filter(is_validated=False, locked_by=None).first()
+        doc = (
+            cls.objects.filter(is_validated=False, locked_by=None).order_by("?").first()
+        )
 
         return doc
