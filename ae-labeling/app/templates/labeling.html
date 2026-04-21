@@ -61,6 +61,10 @@
 
                 <div class="d-grid gap-2 mt-4">
                     <button type="button" class="btn btn-primary btn-lg" onclick="submitForm()">Sauvegarder et passer à la suivante</button>
+                    <!-- Skip Button -->
+                    <button type="button" class="btn btn-outline-warning" onclick="skipDocument({{ doc.id }})">
+                        Passer le document
+                    </button>
                     <!-- Release Lock Button (for abandoning document) -->
                     <button type="button" class="btn btn-outline-danger btn-sm" 
                             onclick="releaseLock({{ doc.id }})">
@@ -163,6 +167,25 @@
         }
     }
     
+    async function skipDocument(docId) {
+        if (!confirm("Voulez-vous vraiment passer ce document sans le valider ?")) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`{% url 'skip_document' doc.id %}`);
+            const data = await response.json();
+
+            if (data.success) {
+                window.location.href = "{% url 'labeling' %}";
+            } else {
+                alert("Erreur: " + data.error);
+            }
+        } catch (error) {
+            console.error('Error skipping document:', error);
+            alert("Une erreur est survenue lors du passage du document.");
+        }
+    }
     
     resetIdleTimer(); // Start the timer
 </script>

@@ -1,8 +1,10 @@
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from sklearn.metrics import classification_report
 
 from .models import Document
 
@@ -107,6 +109,24 @@ def labeling_document_view(request, doc_id):
 
 
 @login_required
+def skip_document_undelivered_view(request, doc_id):
+    """
+    View to intentionally skip a document.
+    Unlocks the current document and redirects to the next available one.
+    """
+    doc = get_object_or_404(Document, id=doc_id)
+
+    # Only allow the user who has the lock to skip it
+    if doc.locked_by and doc.locked_by == request.user:
+        doc.unlock()
+        return JsonResponse({"success": True})
+
+    return JsonResponse(
+        {"error": "You do not have the lock for this document"}, status=403
+    )
+
+
+@login_required
 def release_lock_view(request):
     """API endpoint to manually release a lock (e.g., user closes browser)"""
 
@@ -135,3 +155,77 @@ def check_lock_status(request, doc_id):
             "locked_at": doc.locked_at.isoformat() if doc.locked_at else None,
         }
     )
+
+
+@login_required
+def dashboard_view(request):
+    """View to show statistics and classification report"""
+    total_docs = Document.objects.count()
+    validated_docs = Document.objects.filter(is_validated=True).count()
+    overall_completion = (validated_docs / total_docs * 100) if total_docs > 0 else 0
+
+    # User specific stats
+    user_validated_docs = Document.objects.filter(
+        validated_by=request.user, is_validated=True
+    ).count()
+
+    user_contribution = (
+        (user_validated_docs / validated_docs * 100) if validated_docs > 0 else 0
+    )
+
+    # User stats table data
+    user_stats = (
+        Document.objects.filter(is_validated=True)
+        .values("validated_by__username")
+        .annotate(count=Count("id"))
+        .order_by("-count")
+    )
+
+    # Classification Report logic
+
+    LABELS_MAP = {
+        "Surfaces artificialisées": "surfaces_artificialisees",
+        "Surfaces naturelles": "surfaces_naturelles",
+        "Surfaces agricoles": "surfaces_agricoles",
+        "Surfaces forestières": "surfaces_forestieres",
+    }
+
+    true_labels = []
+    pred_labels = []
+    for doc in Document.objects.filter(is_validated=True):
+        validated_preds = []
+        model_labels = []
+        for human_readable_label, label in LABELS_MAP.items():
+            validated_preds.append(doc.validated_predictions.get(label))
+            model_labels.append(doc.original_predictions.get(label).get("pred"))
+        true_labels.append(validated_preds)
+        pred_labels.append(model_labels)
+
+    # Prepare report data: list of dicts with label and count
+    classification_report_dict: dict = classification_report(
+        true_labels, pred_labels, target_names=LABELS_MAP.keys(), output_dict=True
+    )
+    # Django doesn't like hyphens :
+    sanitized_report = {}
+    for key, value in classification_report_dict.items():
+        new_key = key.replace(" ", "_")
+        if isinstance(value, dict):
+            # Also sanitize inner keys (like 'f1-score' -> 'f1_score')
+            inner_dict = {}
+            for k, v in value.items():
+                inner_k = k.replace("-", "_").replace(" ", "_")
+                inner_dict[inner_k] = v
+            sanitized_report[new_key] = inner_dict
+        else:
+            sanitized_report[new_key] = value
+    context = {
+        "total_docs": total_docs,
+        "validated_docs": validated_docs,
+        "overall_completion": overall_completion,
+        "user_validated_docs": user_validated_docs,
+        "user_contribution": user_contribution,
+        "user_stats": user_stats,
+        "classification_report": sanitized_report,
+    }
+
+    return render(request, "dashboard.html", context)

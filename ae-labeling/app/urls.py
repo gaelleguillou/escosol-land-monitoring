@@ -10,6 +10,10 @@ urlpatterns = [
     path(
         "document/<int:doc_id>/", views.labeling_document_view, name="labeling_document"
     ),
+    # Skip a document
+    path(
+        "skip/<int:doc_id>/", views.skip_document_undelivered_view, name="skip_document"
+    ),
     # Lock management endpoints
     path("api/release-lock/", views.release_lock_view, name="release_lock"),
     path(
@@ -17,6 +21,8 @@ urlpatterns = [
         views.check_lock_status,
         name="check_lock_status",
     ),
+    # Dashboard view
+    path("dashboard/", views.dashboard_view, name="dashboard"),
     # Auth routes
     path(
         "login/", auth_views.LoginView.as_view(template_name="login.html"), name="login"

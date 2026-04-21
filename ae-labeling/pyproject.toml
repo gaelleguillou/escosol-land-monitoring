@@ -10,6 +10,7 @@ dependencies = [
     "gunicorn>=25.1.0",
     "polars>=1.38.0",
     "psycopg2-binary>=2.9.11",
+    "scikit-learn>=1.8.0",
     "whitenoise>=6.12.0",
 ]
 

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validation des prédictions LLM - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">Validation des prédictions LLM - Dashboard</a>
+            <div class="navbar-nav">
+                <a class="nav-link" href="{% url 'labeling' %}">Retour sur l'interface de validation</a>
+                <a class="nav-link" href="{% url 'logout' %}">Déconnexion</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Overall Progress -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Progression de la validation</h5>
+                <p class="text-muted">{{ validated_docs }} / {{ total_docs }} documents validés</p>
+                <div class="progress" style="height: 30px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                         role="progressbar" 
+                         style="width: {{ overall_completion }}%" 
+                         aria-valuenow="{{ overall_completion }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                        {{ overall_completion|floatformat:1 }}%
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- User Contribution -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Votre contribution</h5>
+                        <p class="display-6 text-primary">{{ user_validated_docs }}</p>
+                        <p class="text-muted">Documents validés</p>
+                        <hr>
+                        <p class="mb-0">Vous avez validé <strong>{{ user_contribution|floatformat:1 }}%</strong> de l'ensemble des documents.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Leaderboard -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Validation par utilisateur</h5>
+                        <table class="table table-hover mt-3">
+                            <thead>
+                                <tr>
+                                    <th>Utilisateur</th>
+                                    <th>Nombre de documents validés</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in user_stats %}
+                                <tr>
+                                    <td>{{ stat.validated_by__username }}</td>
+                                    <td><span class="badge bg-info text-dark">{{ stat.count }}</span></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="2" class="text-center">No validations recorded yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Classification Report -->
+        <div class="card shadow-sm mb-5">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0">Rapport de classification</h5>
+                <small class="text-muted">Détail par catégorie de sol</small>
+            </div>
+            <div class="card-body">
+                {% if classification_report %}
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Catégorie de sol</th>
+                                    <th>Precision</th>
+                                    <th>Recall</th>
+                                    <th>F1-Score</th>
+                                    <th>Support</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for label, metrics in classification_report.items %}
+                                    {# Only show rows that are class labels (contain a dict of metrics) #}
+                                    {% if label != "accuracy" and label != "macro avg" and label != "weighted avg" %}
+                                        <tr>
+                                            <td><strong>{{ label }}</strong></td>
+                                            <td>{{ metrics.precision|floatformat:2 }}</td>
+                                            <td>{{ metrics.recall|floatformat:2 }}</td>
+                                            <td>{{ metrics.f1_score|floatformat:2 }}</td>
+                                            <td>{{ metrics.support }}</td>
+                                        </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+            <!-- Summary Stats for Accuracy -->
+            {% if classification_report.micro_avg %}
+                <div class="card border-primary mb-4 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Performances globales (Micro Average)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3 border-end">
+                                <small class="text-muted d-block text-uppercase fw-bold">Precision</small>
+                                <span class="h4">{{ classification_report.micro_avg.precision|floatformat:2 }}</span>
+                            </div>
+                            <div class="col-md-3 border-end">
+                                <small class="text-muted d-block text-uppercase fw-bold">Recall</small>
+                                <span class="h4">{{ classification_report.micro_avg.recall|floatformat:2 }}</span>
+                            </div>
+                            <div class="col-md-3 border-end">
+                                <small class="text-muted d-block text-uppercase fw-bold">F1-Score</small>
+                                <span class="h4">{{ classification_report.micro_avg.f1_score|floatformat:2 }}</span>
+                            </div>
+                            <div class="col-md-3">
+                                <small class="text-muted d-block text-uppercase fw-bold">Support</small>
+                                <span class="h4">{{ classification_report.micro_avg.support|floatformat:1 }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% else %}
+                    <p class="text-center text-muted py-4">Pas de données disponibles.</p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+   
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
